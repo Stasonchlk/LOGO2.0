@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Details</title>
+</head>
+<body>
+    <div id="post-details"></div>
+
+    <script>
+        // Функция для получения параметров из URL
+        function getQueryParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Получаем postId из URL
+        const postId = getQueryParameter('id');
+
+        if (postId) {
+            // Здесь вы можете сделать запрос к вашему API для получения данных поста
+            fetch(`https://yourapi.com/posts?id=${postId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const postDetails = document.getElementById('post-details');
+                    postDetails.innerHTML = `
+                        <h1>${data.title}</h1>
+                        <p>${data.content}</p>
+                        <img src="${data.imageUrl}" alt="${data.title}" />
+                    `;
+                })
+                .catch(error => {
+                    console.error('Ошибка при получении поста:', error);
+                });
+        } else {
+            document.getElementById('post-details').innerText = 'Пост не найден.';
+        }
+    </script>
+</body>
+</html>
