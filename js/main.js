@@ -1,146 +1,130 @@
 // Инициализация Firebase
 const firebaseConfig = {
-  // Здесь нужно вставить конфигурацию вашего Firebase проекта
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+    // Ваша конфигурация Firebase
 };
-
 firebase.initializeApp(firebaseConfig);
 
-// Глобальные переменные
-let currentUser = null;
-
-// Функция для проверки аутентификации
-function checkAuth() {
-  firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-      currentUser = user;
-      document.body.classList.add('authenticated');
-      updateUIForAuthenticatedUser();
-    } else {
-      currentUser = null;
-      document.body.classList.remove('authenticated');
-      updateUIForUnauthenticatedUser();
+// Получение ссылок на элементы UI
+document.addEventListener('DOMContentLoaded', function() {
+    // Кнопки навигации
+    const eventsButton = document.getElementById('eventsButton');
+    const postsButton = document.getElementById('postsButton');
+    const profileButton = document.getElementById('profileButton');
+    const messagesButton = document.getElementById('messagesButton');
+    
+    // Обработчики событий для кнопок
+    if(eventsButton) {
+        eventsButton.addEventListener('click', () => {
+            window.location.href = 'activity_create_rulse.xml';
+        });
     }
-  });
-}
 
-// Функция для обновления UI для аутентифицированного пользователя
-function updateUIForAuthenticatedUser() {
-  const authButtons = document.querySelectorAll('.auth-button');
-  authButtons.forEach(button => {
-    button.style.display = 'none';
-  });
-  
-  const userInfo = document.getElementById('user-info');
-  if (userInfo) {
-    userInfo.textContent = `Привет, ${currentUser.displayName || currentUser.email}!`;
-    userInfo.style.display = 'block';
-  }
-  
-  const logoutButton = document.getElementById('logout-button');
-  if (logoutButton) {
-    logoutButton.style.display = 'block';
-  }
-}
+    if(postsButton) {
+        postsButton.addEventListener('click', () => {
+            window.location.href = 'activity_create_post.xml';
+        });
+    }
 
-// Функция для обновления UI для неаутентифицированного пользователя
-function updateUIForUnauthenticatedUser() {
-  const authButtons = document.querySelectorAll('.auth-button');
-  authButtons.forEach(button => {
-    button.style.display = 'block';
-  });
-  
-  const userInfo = document.getElementById('user-info');
-  if (userInfo) {
-    userInfo.style.display = 'none';
-  }
-  
-  const logoutButton = document.getElementById('logout-button');
-  if (logoutButton) {
-    logoutButton.style.display = 'none';
-  }
-}
+    if(profileButton) {
+        profileButton.addEventListener('click', () => {
+            window.location.href = 'activity_profile.xml';
+        });
+    }
 
-// Функция для входа в систему
-function login() {
-  const email = document.getElementById('login-email').value;
-  const password = document.getElementById('login-password').value;
-
-  firebase.auth().signInWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-      // Вход выполнен успешно
-      const user = userCredential.user;
-      console.log("Вход выполнен успешно:", user);
-    })
-    .catch((error) => {
-      // Обработка ошибок
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      console.error("Ошибка входа:", errorCode, errorMessage);
-      alert("Ошибка входа: " + errorMessage);
+    if(messagesButton) {
+        messagesButton.addEventListener('click', () => {
+            window.location.href = 'activity_chats.xml';
+        });
+    }
+    
+    // Проверка аутентификации
+    firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+            // Пользователь авторизован
+            console.log('User is signed in');
+            // Можно добавить дополнительную логику
+        } else {
+            // Пользователь не авторизован
+            console.log('No user is signed in');
+            window.location.href = 'activity_code_input.xml';
+        }
     });
-}
-
-// Функция для регистрации
-function register() {
-  const email = document.getElementById('register-email').value;
-  const password = document.getElementById('register-password').value;
-
-  firebase.auth().createUserWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-      // Регистрация выполнена успешно
-      const user = userCredential.user;
-      console.log("Регистрация выполнена успешно:", user);
-    })
-    .catch((error) => {
-      // Обработка ошибок
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      console.error("Ошибка регистрации:", errorCode, errorMessage);
-      alert("Ошибка регистрации: " + errorMessage);
-    });
-}
-
-// Функция для выхода из системы
-function logout() {
-  firebase.auth().signOut()
-    .then(() => {
-      console.log("Выход выполнен успешно");
-    })
-    .catch((error) => {
-      console.error("Ошибка выхода:", error);
-    });
-}
-
-// Инициализация приложения
-function init() {
-  checkAuth();
-  
-  // Добавление обработчиков событий для кнопок
-  const loginButton = document.getElementById('login-button');
-  if (loginButton) {
-    loginButton.addEventListener('click', login);
-  }
-
-  document.getElementById('eventsButton').addEventListener('click', () => {
-    window.location.href = 'events.html';
 });
-  
-  const registerButton = document.getElementById('register-button');
-  if (registerButton) {
-    registerButton.addEventListener('click', register);
-  }
-  
-  const logoutButton = document.getElementById('logout-button');
-  if (logoutButton) {
-    logoutButton.addEventListener('click', logout);
-  }
+
+// Функции для работы с Firebase
+function createPost(title, content, imageUrl) {
+    const db = firebase.database();
+    const user = firebase.auth().currentUser;
+    
+    return db.ref('posts').push({
+        title: title,
+        content: content,
+        imageUrl: imageUrl,
+        userId: user.uid,
+        timestamp: Date.now()
+    });
 }
 
-// Запуск инициализации после загрузки DOM
-document.addEventListener('DOMContentLoaded', init);
+function createEvent(title, description, date, location) {
+    const db = firebase.database();
+    const user = firebase.auth().currentUser;
+    
+    return db.ref('events').push({
+        title: title,
+        description: description,
+        date: date,
+        location: location,
+        userId: user.uid,
+        timestamp: Date.now()
+    });
+}
+
+// Обработка сообщений
+function sendMessage(recipientId, message) {
+    const db = firebase.database();
+    const user = firebase.auth().currentUser;
+    
+    return db.ref('messages').push({
+        senderId: user.uid,
+        recipientId: recipientId,
+        message: message,
+        timestamp: Date.now()
+    });
+}
+
+// Функции для работы с профилем
+function updateProfile(displayName, photoURL) {
+    const user = firebase.auth().currentUser;
+    
+    return user.updateProfile({
+        displayName: displayName,
+        photoURL: photoURL
+    });
+}
+
+// Обработка ошибок
+function handleError(error) {
+    console.error('Error:', error);
+    // Можно добавить отображение ошибки пользователю
+    alert('Произошла ошибка: ' + error.message);
+}
+
+// Утилиты
+function formatDate(timestamp) {
+    return new Date(timestamp).toLocaleString();
+}
+
+function validateInput(input) {
+    return input && input.trim().length > 0;
+}
+
+// Экспорт функций если используются модули
+export {
+    createPost,
+    createEvent,
+    sendMessage,
+    updateProfile,
+    handleError,
+    formatDate,
+    validateInput
+};
