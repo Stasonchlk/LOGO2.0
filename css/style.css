@@ -1,6 +1,5 @@
 body {
     font-family: Arial, sans-serif;
-    line-height: 1.6;
     margin: 0;
     padding: 0;
     background-color: #f4f4f4;
@@ -9,7 +8,7 @@ body {
 header {
     background-color: #333;
     color: #fff;
-    padding: 1rem;
+    padding: 10px 0;
 }
 
 nav ul {
@@ -19,7 +18,7 @@ nav ul {
 
 nav ul li {
     display: inline;
-    margin-right: 10px;
+    margin-right: 20px;
 }
 
 nav ul li a {
@@ -27,16 +26,51 @@ nav ul li a {
     text-decoration: none;
 }
 
+nav ul li a:hover,
+nav ul li a.active {
+    text-decoration: underline;
+}
+
 main {
-    padding: 2rem;
+    padding: 20px;
+}
+
+.profile-container,
+.posts-container,
+.events-container,
+.chat-container {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.create-post-button,
+.create-event-button,
+.send-message-button,
+.edit-profile-button {
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.create-post-button:hover,
+.create-event-button:hover,
+.send-message-button:hover,
+.edit-profile-button:hover {
+    background-color: #218838;
 }
 
 footer {
+    text-align: center;
+    padding: 10px 0;
     background-color: #333;
     color: #fff;
-    text-align: center;
-    padding: 1rem;
-    position: fixed;
+    position: relative;
     bottom: 0;
     width: 100%;
 }
