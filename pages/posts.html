@@ -1,15 +1,49 @@
-<div id="posts-container">
-    <h2>Посты</h2>
-    <button id="create-post">Создать пост</button>
-    <div id="posts-list"></div>
-</div>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Посты</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Главная</a></li>
+                <li><a href="posts.html" class="active">Посты</a></li>
+                <li><a href="events.html">События</a></li>
+                <li><a href="chat.html">Чат</a></li>
+                <li><a href="profile.html">Профиль</a></li>
+            </ul>
+        </nav>
+    </header>
 
-<div id="create-post-modal" class="modal">
-    <div class="modal-content">
-        <h3>Создать новый пост</h3>
-        <input type="text" id="post-title" placeholder="Заголовок">
-        <textarea id="post-content" placeholder="Содержание поста"></textarea>
-        <input type="file" id="post-image">
-        <button id="submit-post">Опубликовать</button>
-    </div>
-</div>
+    <main>
+        <h1>Мои посты</h1>
+        <div id="postsContainer" class="posts-container">
+            <!-- Здесь будут отображаться посты -->
+        </div>
+        <button id="createPostButton" class="create-post-button">Создать новый пост</button>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 Ваше приложение. Все права защищены.</p>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <!-- Инициализация Firebase -->
+    <script src="firebase-init.js"></script>
+
+    <!-- Ваши скрипты -->
+    <script src="posts.js"></script>
+    <script>
+        // Вызов функции инициализации постов после загрузки DOM
+        document.addEventListener('DOMContentLoaded', initPosts);
+    </script>
+</body>
+</html>
