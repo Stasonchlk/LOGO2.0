@@ -39,6 +39,11 @@ window.onclick = function(event) {
     }
 }
 
+document.getElementById('postsButton').addEventListener('click', function() {
+    // Здесь должен быть код для перехода к окну постов
+    window.location.href = 'posts.html'; // Пример перехода на страницу постов
+});
+
 // Обработка формы входа
 loginForm.addEventListener('submit', function(e) {
     e.preventDefault();
