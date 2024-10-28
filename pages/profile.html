@@ -1,19 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль пользователя</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="index.html">Главная</a></li>
+                <li><a href="posts.html">Посты</a></li>
+                <li><a href="chats.html">Чаты</a></li>
+                <li><a href="profile.html" class="active">Профиль</a></li>
+            </ul>
+        </nav>
+    </header>
 
-<div id="profile-container">
-    <h2>Профиль</h2>
-    <div id="profile-info">
-        <p>Имя: <span id="name"></span></p>
-        <p>Фамилия: <span id="surname"></span></p>
-        <p>Дата рождения: <span id="birthdate"></span></p>
-    </div>
-    <button id="edit-profile">Редактировать профиль</button>
-    <div id="edit-profile-modal" class="modal">
-        <div class="modal-content">
-            <h3>Редактировать профиль</h3>
-            <input type="text" id="edit-name" placeholder="Имя">
-            <input type="text" id="edit-surname" placeholder="Фамилия">
-            <input type="date" id="edit-birthdate" placeholder="Дата рождения">
-            <button id="save-profile">Сохранить</button>
+    <main>
+        <div id="profileContainer" class="profile-container">
+            <!-- Здесь будет отображаться информация о профиле -->
         </div>
-    </div>
-</div>
+
+        <button id="editProfileButton" class="edit-profile-button">Редактировать профиль</button>
+
+        <section class="user-posts">
+            <h2>Мои посты</h2>
+            <div id="userPostsContainer">
+                <!-- Здесь будут отображаться посты пользователя -->
+            </div>
+        </section>
+
+        <section class="user-stats">
+            <h2>Статистика</h2>
+            <ul>
+                <li>Количество постов: <span id="postCount">0</span></li>
+                <li>Количество лайков: <span id="likeCount">0</span></li>
+                <li>Дата регистрации: <span id="registrationDate"></span></li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 Ваше приложение. Все права защищены.</p>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+    <!-- Инициализация Firebase -->
+    <script src="firebase-init.js"></script>
+
+    <!-- Ваши скрипты -->
+    <script src="profile.js"></script>
+    <script>
+        // Вызов функции инициализации профиля после загрузки DOM
+        document.addEventListener('DOMContentLoaded', initProfile);
+    </script>
+</body>
+</html>
