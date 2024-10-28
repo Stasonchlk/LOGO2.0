@@ -141,6 +141,11 @@
                 });
         });
 
+        document.getElementById('postsButton').addEventListener('click', function() {
+    // Здесь должен быть код для перехода к окну постов
+    window.location.href = 'posts.html'; // Пример перехода на страницу постов
+});
+
         // Проверка состояния аутентификации
         firebase.auth().onAuthStateChanged((user) => {
             const loginBtn = document.getElementById('loginBtn');
