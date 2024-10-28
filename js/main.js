@@ -126,6 +126,10 @@ function init() {
   if (loginButton) {
     loginButton.addEventListener('click', login);
   }
+
+  document.getElementById('eventsButton').addEventListener('click', () => {
+    window.location.href = 'events.html';
+});
   
   const registerButton = document.getElementById('register-button');
   if (registerButton) {
