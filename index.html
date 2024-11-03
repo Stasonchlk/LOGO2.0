@@ -237,19 +237,18 @@
       const postDiv = document.createElement('div');
       postDiv.classList.add('post');
       postDiv.innerHTML = `
-    <h3>${post.title || 'Без заголовка'}</h3>
-    <p>${post.content || 'Без содержания'}</p>
-    <img src="${post.imageUrl || ''}" alt="Изображение поста" style="max-width: 100%; height: auto;">
-    <p><strong>Дата:</strong> ${post.date || 'Нет даты'}</p>
-    <p><strong>Ключевые слова:</strong> ${Array.isArray(post.keywords) && post.keywords.length > 0 ? post.keywords.join(', ') : 'Нет ключевых слов'}</p>
-    <p><strong>Лайки:</strong> <span id="likes-${post.id}">${post.likes || 0}</span> <button id="likeButton-${post.id}">👍</button></p>
-    <p><strong>Мероприятие:</strong> ${post.rulseId ? `<button id="eventButton-${post.id}">Подробнее</button>` : 'Не прикреплено'}</p>
-    <h4>Комментарии:</h4>
-    <div id="comments-${post.id}"></div>
-    <input type="text" id="commentInput-${post.id}" placeholder="Ваш комментарий">
-    <button id="addCommentButton-${post.id}">Добавить комментарий</button>
-    <div class="comments" style="display: none;"></div>
-  `;
+        <h3>${post.title || 'Без заголовка'}</h3>
+        <p>${post.content || 'Без содержания'}</p>
+        <img src="${post.imageUrl || ''}" alt="Изображение поста" style="max-width: 100%; height: auto;">
+        <p><strong>Дата:</strong> ${post.date || 'Нет даты'}</p>
+        <p><strong>Ключевые слова:</strong> ${Array.isArray(post.keywords) && post.keywords.length > 0 ? post.keywords.join(', ') : 'Нет ключевых слов'}</p>
+        <p><strong>Лайки:</strong> <span id="likes-${post.id}">${post.likes || 0}</span> <button id="likeButton-${post.id}">👍</button></p>
+        <p><strong>Мероприятие:</strong> ${post.rulseId ? `<button id="eventButton-${post.id}">Подробнее</button>` : 'Не прикреплено'}</p>
+        <h4>Комментарии:</h4>
+        <div id="comments-${post.id}"></div>
+        <input type="text" id="commentInput-${post.id}" placeholder="Ваш комментарий">
+        <button id="addCommentButton-${post.id}">Добавить комментарий</button>
+    `;
       postsContainer.appendChild(postDiv);
 
       // Добавление обработчиков событий
@@ -259,14 +258,14 @@
       // Обработчик для кнопки "Подробнее"
       if (post.rulseId) {
         document.getElementById(`eventButton-${post.id}`).onclick = () => {
-          openEventDetails(post.rulseId); // Функция для открытия модального окна с деталями мероприятия
+          openEventDetails(post.rulseId, post.title); // Передаем rulseId и заголовок поста
         };
       }
 
       loadComments(post.id);
     }
 
-    function openEventDetails(rulseId) {
+    function openEventDetails(rulseId, postTitle) {
       const eventRef = ref(database, 'banners/' + rulseId);
       get(eventRef).then((snapshot) => {
         if (snapshot.exists()) {
@@ -275,6 +274,13 @@
           document.getElementById('eventDescription').innerText = eventData.description;
           document.getElementById('eventMetka').innerText = eventData.metka;
           document.getElementById('eventImage').src = eventData.imageUrl;
+
+          // Генерация QR-кода
+          const bannerId = rulseId; // Используем rulseId как bannerId
+          const appLink = "https://logo-2-0.vercel.app/banner"; // Ссылка для приложения
+          const webLink = "https://logo-2-0.vercel.app/index.html"; // Ссылка для веб-сайта
+          const finalLink = appLink + "||" + webLink; // Объединяем ссылки
+          generateQRCode(finalLink); // Генерируем QR-код
 
           // Открываем модальное окно
           document.getElementById('eventDetailsModal').style.display = "block";
@@ -285,6 +291,22 @@
         console.error("Ошибка при получении данных мероприятия:", error);
       });
     }
+
+    function generateQRCode(link) {
+      $('#qrcode').empty(); // Очистить предыдущий QR-код
+      $('#qrcode').qrcode({
+        text: link,
+        width: 200,
+        height: 200,
+      });
+    }
+    $('#qrcode').on('click', function() {
+      const links = finalLink.split('||');
+      window.location.href = links[0];
+      setTimeout(() => {
+        window.location.href = links[1];
+      }, 1000); // Задержка в 1 секунду
+    });
 
     // Закрытие модального окна
     document.getElementById('closeEventDetailsModal').onclick = function() {
@@ -421,40 +443,6 @@
 
       uploadPost(title, content, imageFile, eventId); // Передаем eventId
     }
-
-
-
-
-
-    function generateQRCode(link) {
-      $('#qrcode').empty(); // Очистить предыдущий QR-код
-      $('#qrcode').qrcode({
-        text: link,
-        width: 200,
-        height: 200,
-      });
-    }
-
-    // Пример использования
-    const bannerId = "123"; // Получите ваш bannerId
-    const appLink = "myapp://banner?bannerId=" + bannerId; // Ссылка для приложения
-    const webLink = "https://logo-2-0.vercel.app/banner?bannerId=" + bannerId; // Ссылка для веб-сайта
-    const finalLink = appLink + "||" + webLink; // Объединяем ссылки
-
-    generateQRCode(finalLink); // Генерируем QR-код
-    $('#qrcode').on('click', function() {
-      const links = finalLink.split('||');
-
-      // Попробуем открыть приложение
-      window.location.href = links[0];
-
-      // Если приложение не установлено, через 1 секунду открываем веб-сайт
-      setTimeout(() => {
-        window.location.href = links[1];
-      }, 1000); // Задержка в 1 секунду
-    });
-
-
 
     // Проверка соответствия поста фильтрам
     function matchesFilter(post, titleFilter, dateFilter, keywordsFilter) {
@@ -607,3 +595,4 @@
 
 </body>
 </html>
+
