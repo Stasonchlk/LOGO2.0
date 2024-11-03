@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Посты и Мероприятия</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, get, onValue, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { push } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhJwmFlIgXt0z6gcoErRTXQo3kkjDqOuo",
+      authDomain: "lastp-44a37.firebaseapp.com",
+      databaseURL: "https://lastp-44a37-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "lastp-44a37",
+      storageBucket: "lastp-44a37.appspot.com",
+      messagingSenderId: "972643290372",
+      appId: "1:972643290372:web:c42fdc293cf8cac0609451",
+      measurementId: "G-C7R84JG5XZ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const storage = getStorage(app);
+    const auth = getAuth(app);
+
+    // Загрузка постов
+    const postsContainer = document.getElementById('postsContainer');
+    const eventsContainer = document.getElementById('eventsContainer');
+
+    function loadPosts() {
+      const postsRef = ref(database, 'banners');
+      onValue(postsRef, (snapshot) => {
+        postsContainer.innerHTML = ''; // Очистка контейнера
+        snapshot.forEach((childSnapshot) => {
+          const post = childSnapshot.val();
+          addPostToView(post);
+        });
+      });
+    }
+
+    function addPostToView(post) {
+      const postDiv = document.createElement('div');
+      postDiv.classList.add('post');
+      postDiv.innerHTML = `
+        <h3>${post.title || 'Без заголовка'}</h3>
+        <p>${post.content || 'Без содержания'}</p>
+        <img src="${post.imageUrl || ''}" alt="Изображение поста" style="max-width: 100%; height: auto;">
+        <p><strong>Дата:</strong> ${post.date || 'Нет даты'}</p>
+        <p><strong>Ключевые слова:</strong> ${Array.isArray(post.keywords) ? post.keywords.join(', ') : 'Нет ключевых слов'}</p>
+      `;
+      postsContainer.appendChild(postDiv);
+    }
+
+    // Загрузка мероприятий
+    function loadEvents() {
+      const eventsRef = ref(database, 'events');
+      onValue(eventsRef, (snapshot) => {
+        eventsContainer.innerHTML = ''; // Очистка контейнера
+        snapshot.forEach((childSnapshot) => {
+          const event = childSnapshot.val();
+          addEventToView(event);
+        });
+      });
+    }
+
+    function addEventToView(event) {
+      const eventDiv = document.createElement('div');
+      eventDiv.classList.add('event');
+      eventDiv.innerHTML = `
+        <h3>${event.theme || 'Без темы'}</h3>
+        <p>${event.description || 'Без описания'}</p>
+        <p><strong>Ключевые слова:</strong> ${event.keywords.join(', ')}</p>
+        <p><strong>Участники:</strong> ${event.participants}</p>
+        <p><strong>Дата:</strong> ${event.date}</p>
+        <img src="${event.imageUrl}" alt="Изображение мероприятия" style="max-width: 100%; height: auto;">
+      `;
+      eventsContainer.appendChild(eventDiv);
+    }
+
+    // Создание мероприятия
+    const createEventButton = document.getElementById('createEventButton');
+    const createEventModal = document.getElementById('createEventModal');
+    const closeCreateEventModal = document.getElementById('closeCreateEventModal');
+    const submitEventButton = document.getElementById('submitEventButton');
+
+    createEventButton.onclick = function() {
+      createEventModal.style.display = "block";
+    }
+
+    closeCreateEventModal.onclick = function() {
+      createEventModal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+      if (event.target === createEventModal) {
+        createEventModal.style.display = "none";
+      }
+    }
+
+    submitEventButton.onclick = function() {
+      const theme = document.getElementById('eventTheme').value;
+      const description = document.getElementById('eventDescription').value;
+      const keywords = document.getElementById('eventKeywords').value;
+      const participants = document.getElementById('eventParticipants').value;
+      const date = document.getElementById('eventDate').value;
+      const imageInput = document.getElementById('eventImage');
+      const imageFile = imageInput.files[0];
+
+      if (!theme || !description || !keywords || !participants || !date || !imageFile) {
+        alert("Пожалуйста, заполните все поля.");
+        return;
+      }
+
+      uploadEvent(theme, description, keywords, participants, date, imageFile);
+    }
+
+    function uploadEvent(theme, description, keywords, participants, date, imageFile) {
+      const progressDialog = document.createElement('div');
+      progressDialog.innerText = "Загрузка мероприятия...";
+      document.body.appendChild(progressDialog);
+
+      const storageReference = storageRef(storage, 'eventUploads/' + imageFile.name);
+      const uploadTask = uploadBytes(storageReference, imageFile);
+
+      uploadTask.then((snapshot) => {
+        return getDownloadURL(snapshot.ref);
+      }).then((downloadURL) => {
+        const eventId = Date.now().toString(); // Используем временную метку как уникальный ID
+        const event = {
+          id: eventId,
+          theme: theme,
+          description: description,
+          keywords: keywords.split(',').map(keyword => keyword.trim()), // Разбиваем ключевые слова на массив
+          participants: participants,
+          date: date,
+          imageUrl: downloadURL,
+          participantsCount: 0, // Инициализируем количество участников
+        };
+
+        // Сохранение мероприятия в базе данных
+        set(ref(database, 'events/' + eventId), event)
+          .then(() => {
+            progressDialog.innerText = "Мероприятие успешно загружено!";
+            setTimeout(() => {
+              progressDialog.remove();
+              createEventModal.style.display = "none"; // Закрываем модальное окно
+              document.getElementById('eventTheme').value = ''; // Очищаем поля
+              document.getElementById('eventDescription').value = '';
+              document.getElementById('eventKeywords').value = '';
+              document.getElementById('eventParticipants').value = '';
+              document.getElementById('eventDate').value = '';
+              document.getElementById('eventImage').value = '';
+            }, 2000);
+          })
+          .catch((error) => {
+            progressDialog.innerText = "Ошибка при загрузке мероприятия: " + error.message;
+            setTimeout(() => {
+              progressDialog.remove();
+            }, 2000);
+          });
+      });
+    }
+
+    loadPosts();
+    loadEvents();
+  </script>
+</head>
+<body>
+<button onclick="window.location.href='index.html'">к постам</button>
+
+<h1>Посты и Мероприятия</h1>
+<button id="createEventButton">Создать мероприятие</button>
+<div id="createEventModal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" id="closeCreateEventModal">&times;</span>
+    <h2>Создать мероприятие</h2>
+    <input type="text" id="eventTheme" placeholder="Тема мероприятия" required>
+    <textarea id="eventDescription" placeholder="Описание мероприятия" required></textarea>
+    <input type="text" id="eventKeywords" placeholder="Ключевые слова" required>
+    <input type="text" id="eventParticipants" placeholder="Количество участников" required>
+    <input type="text" id="eventDate" placeholder="Дата мероприятия" required>
+    <input type="file" id="eventImage" accept="image/*" required>
+    <button id="submitEventButton">Создать мероприятие</button>
+  </div>
+</div>
+<div id="postsContainer"></div>
+<div id="eventsContainer"></div>
+</body>
+</html>
