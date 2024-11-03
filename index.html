@@ -277,8 +277,7 @@
 
           // Генерация QR-кода
           const bannerId = rulseId; // Используем rulseId как bannerId
-                    const appLink = "LOGO://banner?bannerId=" + bannerId; // Ссылка для приложения
-
+          const appLink = "https://logo-2-0.vercel.app/banner?bannerId=" + bannerId; // Ссылка для приложения
           const webLink = "https://logo-2-0.vercel.app/index.html"; // Ссылка для веб-сайта
           const finalLink = appLink + "||" + webLink; // Объединяем ссылки
           generateQRCode(finalLink); // Генерируем QR-код
@@ -286,10 +285,25 @@
           // Добавление обработчика клика на QR-код
           $('#qrcode').off('click').on('click', function() {
             const links = finalLink.split('||');
-            window.location.href = links[0];
+            const appLink = links[0];
+            const webLink = links[1];
+
+            // Создаем временный iframe для проверки доступности приложения
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = appLink;
+            document.body.appendChild(iframe);
+
+            // Устанавливаем таймер для перехода на веб-сайт
             setTimeout(() => {
-              window.location.href = links[1];
-            }, 1000); // Задержка в 1 секунду
+              // Если приложение не открылось, переходим на веб-сайт
+              window.location.href = webLink;
+            }, 2000); // Задержка в 2 секунды, чтобы дать время приложению открыться
+
+            // Удаляем iframe после использования
+            setTimeout(() => {
+              document.body.removeChild(iframe);
+            }, 3000); // Удаляем iframe через 3 секунды
           });
 
           // Открываем модальное окно
@@ -310,7 +324,6 @@
         height: 200,
       });
     }
-
 
     // Закрытие модального окна
     document.getElementById('closeEventDetailsModal').onclick = function() {
