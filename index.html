@@ -277,10 +277,19 @@
 
           // Генерация QR-кода
           const bannerId = rulseId; // Используем rulseId как bannerId
-          const appLink = "https://logo-2-0.vercel.app/banner"; // Ссылка для приложения
+          const appLink = "myapp://banner?bannerId=" + bannerId; // Ссылка для приложения
           const webLink = "https://logo-2-0.vercel.app/index.html"; // Ссылка для веб-сайта
           const finalLink = appLink + "||" + webLink; // Объединяем ссылки
           generateQRCode(finalLink); // Генерируем QR-код
+
+          // Добавление обработчика клика на QR-код
+          $('#qrcode').off('click').on('click', function() {
+            const links = finalLink.split('||');
+            window.location.href = links[0];
+            setTimeout(() => {
+              window.location.href = links[1];
+            }, 1000); // Задержка в 1 секунду
+          });
 
           // Открываем модальное окно
           document.getElementById('eventDetailsModal').style.display = "block";
@@ -300,13 +309,6 @@
         height: 200,
       });
     }
-    $('#qrcode').on('click', function() {
-      const links = finalLink.split('||');
-      window.location.href = links[0];
-      setTimeout(() => {
-        window.location.href = links[1];
-      }, 1000); // Задержка в 1 секунду
-    });
 
     // Закрытие модального окна
     document.getElementById('closeEventDetailsModal').onclick = function() {
