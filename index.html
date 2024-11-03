@@ -265,7 +265,7 @@
       loadComments(post.id);
     }
 
-    function openEventDetails(rulseId, postTitle) {
+     function openEventDetails(rulseId, postTitle) {
       const eventRef = ref(database, 'banners/' + rulseId);
       get(eventRef).then((snapshot) => {
         if (snapshot.exists()) {
@@ -288,22 +288,21 @@
             const appLink = links[0];
             const webLink = links[1];
 
-            // Создаем временный iframe для проверки доступности приложения
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = appLink;
-            document.body.appendChild(iframe);
-
-            // Устанавливаем таймер для перехода на веб-сайт
-            setTimeout(() => {
-              // Если приложение не открылось, переходим на веб-сайт
-              window.location.href = webLink;
-            }, 2000); // Задержка в 2 секунды, чтобы дать время приложению открыться
-
-            // Удаляем iframe после использования
-            setTimeout(() => {
-              document.body.removeChild(iframe);
-            }, 3000); // Удаляем iframe через 3 секунды
+            // Проверка доступности appLink
+            fetch(appLink, { method: 'HEAD' })
+              .then(response => {
+                if (response.ok) {
+                  // Если appLink доступен, открываем его
+                  window.location.href = appLink;
+                } else {
+                  // Если appLink недоступен, открываем webLink
+                  window.location.href = webLink;
+                }
+              })
+              .catch(() => {
+                // Если произошла ошибка при запросе, открываем webLink
+                window.location.href = webLink;
+              });
           });
 
           // Открываем модальное окно
