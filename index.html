@@ -277,7 +277,8 @@
 
           // Генерация QR-кода
           const bannerId = rulseId; // Используем rulseId как bannerId
-          const appLink = "myapp://banner?bannerId=" + bannerId; // Ссылка для приложения
+                    const appLink = "https://logo-2-0.vercel.app/banner?bannerId=" + bannerId; // Ссылка для приложения
+
           const webLink = "https://logo-2-0.vercel.app/index.html"; // Ссылка для веб-сайта
           const finalLink = appLink + "||" + webLink; // Объединяем ссылки
           generateQRCode(finalLink); // Генерируем QR-код
