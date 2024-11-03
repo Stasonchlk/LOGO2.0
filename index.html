@@ -296,8 +296,8 @@
 
           // Генерация QR-кода
           const bannerId = rulseId; // Используем rulseId как bannerId
-          const appLink = "https://logo-2-0.vercel.app/index.html?bannerId=" + bannerId; // Ссылка для веб-сайта
-          const webLink = "https://logo-2-0.vercel.app/index.html"; // Ссылка для веб-сайта
+          const appLink = "https://banner?bannerId=" + bannerId; // Ссылка для веб-сайта
+          const webLink = "https://logo-2-0.vercel.app/index.html?bannerId=" + bannerId; // Ссылка для веб-сайта
           const finalLink = appLink + "||" + webLink; // Объединяем ссылки
           generateQRCode(finalLink); // Генерируем QR-код
 
@@ -485,10 +485,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const bannerId = urlParams.get('bannerId');
 
-      alert("Пожалуйста");
-
       if (bannerId) {
-        alert("Пожалуйста, заполните все поля.");
         openEvent(bannerId); // Открываем детали мероприятия
       }
 
