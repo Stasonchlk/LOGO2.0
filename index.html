@@ -10,6 +10,8 @@
   <!-- Подключение jQuery QRCode -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
   <script type="module">
+
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, get, onValue, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
@@ -26,6 +28,8 @@
       appId: "1:972643290372:web:c42fdc293cf8cac0609451",
       measurementId: "G-C7R84JG5XZ"
     };
+
+
 
 
 
@@ -67,6 +71,34 @@
       }
     }
 
+
+
+    function openEvent(bannerId) {
+      const eventRef = ref(database, 'banners/' + bannerId);
+      get(eventRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const eventData = snapshot.val();
+          document.getElementById('eventTheme').innerText = eventData.theme;
+          document.getElementById('eventDescription').innerText = eventData.description;
+          document.getElementById('eventMetka').innerText = eventData.metka;
+          document.getElementById('eventImage').src = eventData.imageUrl;
+
+          // Генерация QR-кода
+          const appLink = "https://logo-2-0.vercel.app/index.html?bannerId=" + bannerId; // Ссылка для веб-сайта
+          generateQRCode(appLink); // Генерируем QR-код
+
+          // Открываем модальное окно
+          document.getElementById('eventDetailsModal').style.display = "block";
+        } else {
+          alert("Данные мероприятия не найдены.");
+        }
+      }).catch((error) => {
+        console.error("Ошибка при получении данных мероприятия:", error);
+      });
+    }
+
+
+
     submitPostButton.onclick = function() {
       const title = document.getElementById('postTitle').value;
       const content = document.getElementById('postContent').value;
@@ -80,19 +112,6 @@
       }
 
       uploadPost(title, content, imageFile, eventId); // Передаем eventId
-    }
-
-    function handleQRCodeClick() {
-      const finalLink = "myapp://banner?bannerId=123||https://logo-2-0.vercel.app/banner?bannerId=123"; // Получите финальную ссылку, как вы это делали ранее
-      const links = finalLink.split('||');
-
-      // Попробуем открыть приложение
-      window.location.href = links[0];
-
-      // Если приложение не установлено, через 1 секунду открываем веб-сайт
-      setTimeout(() => {
-        window.location.href = links[1];
-      }, 1000); // Задержка в 1 секунду
     }
 
     function uploadPost(title, content, imageFile, eventId) {
@@ -258,14 +277,14 @@
       // Обработчик для кнопки "Подробнее"
       if (post.rulseId) {
         document.getElementById(`eventButton-${post.id}`).onclick = () => {
-          openEventDetails(post.rulseId, post.title); // Передаем rulseId и заголовок поста
+          openEventDetails(post.rulseId); // Передаем rulseId и заголовок поста
         };
       }
 
       loadComments(post.id);
     }
 
-    function openEventDetails(rulseId, postTitle) {
+    function openEventDetails(rulseId) {
       const eventRef = ref(database, 'banners/' + rulseId);
       get(eventRef).then((snapshot) => {
         if (snapshot.exists()) {
@@ -277,7 +296,7 @@
 
           // Генерация QR-кода
           const bannerId = rulseId; // Используем rulseId как bannerId
-          const appLink = "https://banner?bannerId=" + bannerId; // Ссылка для приложения
+          const appLink = "https://logo-2-0.vercel.app/index.html?bannerId=" + bannerId; // Ссылка для веб-сайта
           const webLink = "https://logo-2-0.vercel.app/index.html"; // Ссылка для веб-сайта
           const finalLink = appLink + "||" + webLink; // Объединяем ссылки
           generateQRCode(finalLink); // Генерируем QR-код
@@ -462,13 +481,23 @@
       return matchesTitle && matchesDate && matchesKeywords;
     }
 
-    // Инициализация загрузки постов при загрузке страницы
     window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const bannerId = urlParams.get('bannerId');
+
+      alert("Пожалуйста");
+
+      if (bannerId) {
+        alert("Пожалуйста, заполните все поля.");
+        openEvent(bannerId); // Открываем детали мероприятия
+      }
+
       loadPosts();
       titleFilterInput.addEventListener('input', filterPosts);
       dateFilterInput.addEventListener('input', filterPosts);
       keywordsFilterInput.addEventListener('input', filterPosts);
     }
+
   </script>
   <style>
 
@@ -593,7 +622,6 @@
     <p><strong>Описание:</strong> <span id="eventDescription"></span></p>
     <p><strong>Метка:</strong> <span id="eventMetka"></span></p>
     <button id="signUpButton">Записаться</button>
-    <img id="qrCodeImage" src="" alt="QR-код" style="max-width: 100%; height: auto; cursor: pointer;" onclick="handleQRCodeClick()">
     <div id="qrcode"></div>
   </div>
 </div>
@@ -604,5 +632,3 @@
 
 </body>
 </html>
-
-
