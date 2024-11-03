@@ -265,7 +265,7 @@
       loadComments(post.id);
     }
 
-     function openEventDetails(rulseId, postTitle) {
+    function openEventDetails(rulseId, postTitle) {
       const eventRef = ref(database, 'banners/' + rulseId);
       get(eventRef).then((snapshot) => {
         if (snapshot.exists()) {
@@ -277,8 +277,8 @@
 
           // Генерация QR-кода
           const bannerId = rulseId; // Используем rulseId как bannerId
-          const appLink = "https://logo-2-0.vercel.app/banner?bannerId=" + bannerId; // Ссылка для приложения
-          const webLink = "https://logo-2-0.vercel.app/banner?bannerId=" + bannerId; // Ссылка для веб-сайта
+          const appLink = "https://banner?bannerId=" + bannerId; // Ссылка для приложения
+          const webLink = "https://logo-2-0.vercel.app/index.html"; // Ссылка для веб-сайта
           const finalLink = appLink + "||" + webLink; // Объединяем ссылки
           generateQRCode(finalLink); // Генерируем QR-код
 
@@ -288,21 +288,13 @@
             const appLink = links[0];
             const webLink = links[1];
 
-            // Проверка доступности appLink
-            fetch(appLink, { method: 'HEAD' })
-              .then(response => {
-                if (response.ok) {
-                  // Если appLink доступен, открываем его
-                  window.location.href = appLink;
-                } else {
-                  // Если appLink недоступен, открываем webLink
-                  window.location.href = webLink;
-                }
-              })
-              .catch(() => {
-                // Если произошла ошибка при запросе, открываем webLink
-                window.location.href = webLink;
-              });
+            // Попробуем открыть приложение
+            window.location.href = appLink;
+
+            // Устанавливаем таймер для перехода на веб-сайт через 1 секунду
+            setTimeout(() => {
+              window.location.href = webLink; // Переход на веб-сайт
+            }, 1000); // Задержка в 1 секунду
           });
 
           // Открываем модальное окно
@@ -323,6 +315,7 @@
         height: 200,
       });
     }
+
 
     // Закрытие модального окна
     document.getElementById('closeEventDetailsModal').onclick = function() {
@@ -611,4 +604,5 @@
 
 </body>
 </html>
+
 
