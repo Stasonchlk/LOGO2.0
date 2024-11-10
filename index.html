@@ -809,7 +809,7 @@
         document.getElementById('currentUser Email').innerText = user.email; // Устанавливаем email текущего пользователя
       }
       document.getElementById('changePasswordModal').style.display = "block";
-    };
+    }
 
     window.onload = function() {
       const urlParams = new URLSearchParams(window.location.search);
@@ -953,6 +953,22 @@
 <button id="profileButton">Профиль</button>
 <button id="openMarkersButton">Открыть список меток</button>
 
+<input type="text" id="titleFilter" placeholder="Фильтр по заголовку">
+<input type="text" id="dateFilter" placeholder="Фильтр по дате">
+<input type="text" id="keywordsFilter" placeholder="Фильтр по ключевым словам">
+
+<div id="eventDetailsModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" id="closeEventDetailsModal">&times;</span>
+    <h2 id="eventTheme"></h2>
+    <img id="eventImage" src="" alt="Изображение мероприятия" style="max-width: 100%; height: auto;">
+    <p><strong>Описание:</strong> <span id="eventDescription"></span></p>
+    <p><strong>Метка:</strong> <span id="eventMetka"></span></p>
+    <button id="signUpButton">Записаться</button>
+    <div id="qrcode"></div>
+  </div>
+</div>
+
 <div id="markersModal" class="modal">
   <div class="modal-content">
     <span class="close" id="closeMarkersModal">&times;</span>
@@ -961,7 +977,7 @@
   </div>
 </div>
 
-<div id="profileModal" style="display: none;">
+<div id="profileModal" class="modal" style="display: none;">
   <div class="modal-content">
     <span class="close" id="closeProfileModal">&times;</span>
     <h2>Профиль</h2>
@@ -980,7 +996,7 @@
   </div>
 </div>
 
-<div id="changePasswordModal" style="display: none;">
+<div id="changePasswordModal" class="modal" style="display: none;">
   <div class="modal-content">
     <span class="close" id="closeChangePasswordModal">&times;</span>
     <h2>Изменить пароль</h2>
@@ -1032,22 +1048,6 @@
     <button id="submitPostButton">Создать пост</button>
   </div>
 </div>
-
-<div id="eventDetailsModal" style="display: none;">
-  <div class="modal-content">
-    <span class="close" id="closeEventDetailsModal">&times;</span>
-    <h2 id="eventTheme"></h2>
-    <img id="eventImage" src="" alt="Изображение мероприятия" style="max-width: 100%; height: auto;">
-    <p><strong>Описание:</strong> <span id="eventDescription"></span></p>
-    <p><strong>Метка:</strong> <span id="eventMetka"></span></p>
-    <button id="signUpButton">Записаться</button>
-    <div id="qrcode"></div>
-  </div>
-</div>
-
-<input type="text" id="titleFilter" placeholder="Фильтр по заголовку">
-<input type="text" id="dateFilter" placeholder="Фильтр по дате">
-<input type="text" id="keywordsFilter" placeholder="Фильтр по ключевым словам">
 
 </body>
 </html>
