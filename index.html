@@ -8,12 +8,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
   <!-- Подключение jQuery QRCode -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
   <script type="module">
 
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, get, onValue, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getDatabase, ref, get, onValue, set, update  } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
     import { push } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
     import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
@@ -69,6 +71,61 @@
       if (event.target === loginModal) {
         loginModal.style.display = "none";
       }
+    }
+
+
+    document.getElementById('openMarkersButton').onclick = function() {
+      document.getElementById('markersModal').style.display = 'block';
+      load(); // Load markers when the modal is opened
+    }
+
+    document.getElementById('closeMarkersModal').onclick = function() {
+      document.getElementById('markersModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+      if (event.target === document.getElementById('markersModal')) {
+        document.getElementById('markersModal').style.display = 'none';
+      }
+    }
+
+    // Function to load markers from Firebase
+    function load() {
+      const userEmail = auth.currentUser .email; // Get current user's email
+      const manipulatedEmail = userEmail.replace(".", ",").replace("@", "_").replace(".", ",");
+
+      const markersRef = ref(database, `addresses/${manipulatedEmail}/zapisi`); // Path to markers in the database
+      get(markersRef).then((snapshot) => {
+        const markersList = document.getElementById('markersList');
+        markersList.innerHTML = ''; // Clear previous markers
+
+        if (snapshot.exists()) {
+          snapshot.forEach((childSnapshot) => {
+            const markerId = childSnapshot.val(); // Get marker ID
+            fetchMarkerDetails(markerId, markersList); // Fetch details for each marker
+          });
+        } else {
+          markersList.innerHTML = '<li>Нет доступных меток.</li>';
+        }
+      }).catch((error) => {
+        console.error("Ошибка при загрузке меток:", error);
+      });
+    }
+
+    // Function to fetch marker details and display them
+    function fetchMarkerDetails(markerId, markersList) {
+      const markerRef = ref(database, `banners/${markerId}`);
+      get(markerRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const markerData = snapshot.val();
+          const listItem = document.createElement('li');
+          listItem.textContent = `Тема: ${markerData.theme}, Дата: ${markerData.date}`;
+          markersList.appendChild(listItem);
+        }
+      }).catch((error) => {
+        console.error("Ошибка при получении данных метки:", error);
+      });
     }
 
 
@@ -280,10 +337,62 @@
           openEventDetails(post.rulseId); // Передаем rulseId и заголовок поста
         };
       }
-
       loadComments(post.id);
     }
 
+    function signUpForEvent(eventId) {
+      if (!auth.currentUser ) {
+        alert("Пожалуйста, войдите в систему, чтобы записаться на мероприятие.");
+        return;
+      }
+
+      const userEmail = auth.currentUser .email; // Получаем email текущего пользователя
+      const manipulatedEmail = userEmail.replace(".", ",").replace("@", "_").replace(".", ",");
+
+      const signUpsRef = ref(database, `banners/${eventId}/users`); // Путь к узлу пользователей мероприятия
+
+      // Проверяем, записан ли уже пользователь
+      get(signUpsRef).then((snapshot) => {
+        let users = {};
+
+        if (snapshot.exists()) {
+          users = snapshot.val();
+          // Проверяем, записан ли пользователь по email
+          if (users[manipulatedEmail]) {
+            alert("Вы уже записаны на это мероприятие.");
+            return;
+          }
+        }
+
+        const userRef = ref(database, `banners/${eventId}/users/${manipulatedEmail}`);
+
+        // Сохраняем всех пользователей обратно в узел users
+        set(userRef, manipulatedEmail)
+          .then(() => {
+            // Запись в адреса
+            const goWindow = manipulatedEmail; // Используем обработанный email как ключ
+            const addressesRef = ref(database, `addresses/${goWindow}/zapisi/${eventId}`);
+            return set(addressesRef, eventId); // Записываем ID мероприятия
+          })
+          .then(() => {
+            alert("Вы успешно записались на мероприятие!");
+          })
+          .catch((error) => {
+            console.error("Ошибка при записи на мероприятие:", error);
+            alert("Не удалось записаться на мероприятие. Попробуйте еще раз: " + error.message);
+          });
+      }).catch((error) => {
+        console.error("Ошибка при проверке записей:", error);
+      });
+    }
+
+    // Измените обработчик для кнопки "Записаться"
+    document.getElementById('signUpButton').onclick = function() {
+      const eventId = document.getElementById('eventImage').getAttribute('data-event-id'); // Получаем ID мероприятия
+      signUpForEvent(eventId);
+    };
+
+    // В функции openEventDetails добавьте установку data-event-id для кнопки
     function openEventDetails(rulseId) {
       const eventRef = ref(database, 'banners/' + rulseId);
       get(eventRef).then((snapshot) => {
@@ -293,6 +402,7 @@
           document.getElementById('eventDescription').innerText = eventData.description;
           document.getElementById('eventMetka').innerText = eventData.metka;
           document.getElementById('eventImage').src = eventData.imageUrl;
+          document.getElementById('eventImage').setAttribute('data-event-id', rulseId); // Устанавливаем ID мероприятия
 
           // Генерация QR-кода
           const bannerId = rulseId; // Используем rulseId как bannerId
@@ -388,48 +498,59 @@
       }
 
       const commentsRef = ref(database, `posts/${postId}/comments`);
-      const newComment = {
-        text: commentText,
-        date: new Date().toISOString(),
-        authorId: auth.currentUser .uid
-      };
 
-      push(commentsRef, newComment)
-        .then(() => {
-          commentInput.value = ''; // Очищаем поле ввода
-          loadComments(postId); // Перезагружаем комментарии
-          alert("Комментарий добавлен!");
-        })
-        .catch((error) => {
-          console.error("Ошибка при добавлении комментария:", error);
-          alert("Не удалось добавить комментарий. Попробуйте еще раз.");
-        });
+      // Загружаем текущие комментарии, чтобы определить следующий номер
+      get(commentsRef).then((snapshot) => {
+        let nextCommentNumber = 1; // Начинаем с 1
+
+        if (snapshot.exists()) {
+          const comments = snapshot.val();
+          // Находим максимальный номер комментария
+          nextCommentNumber = Math.max(...Object.keys(comments).map(Number)) + 1;
+        }
+
+        // Сохраняем комментарий с номером
+        const commentId = nextCommentNumber.toString();
+        const newCommentRef = ref(database, `posts/${postId}/comments/${commentId}`);
+
+        set(newCommentRef, commentText)
+          .then(() => {
+            commentInput.value = ''; // Очищаем поле ввода
+            loadComments(postId); // Перезагружаем комментарии
+            alert("Комментарий добавлен!");
+          })
+          .catch((error) => {
+            console.error("Ошибка при добавлении комментария:", error);
+            alert("Не удалось добавить комментарий. Попробуйте еще раз.");
+          });
+      }).catch((error) => {
+        console.error("Ошибка при загрузке комментариев:", error);
+        alert("Не удалось загрузить комментарии.");
+      });
     }
 
     function loadComments(postId) {
       const commentsRef = ref(database, `posts/${postId}/comments`);
+
+      // Устанавливаем слушателя для изменений в комментариях
       onValue(commentsRef, (snapshot) => {
         const commentsDiv = document.getElementById(`comments-${postId}`);
         commentsDiv.innerHTML = ''; // Очищаем предыдущие комментарии
 
-        snapshot.forEach((commentSnapshot) => {
-          const comment = commentSnapshot.val();
-          const commentElement = document.createElement('p');
-          commentElement.innerText = `${comment.text}`;
-          commentsDiv.appendChild(commentElement);
-        });
-      }, {
-        onlyOnce: true // Загружаем комментарии только один раз
+        if (snapshot.exists()) {
+          const comments = snapshot.val();
+          for (const commentId in comments) {
+            if (comments.hasOwnProperty(commentId)) {
+              const commentText = comments[commentId];
+              const commentElement = document.createElement('p');
+              commentElement.innerText = `${commentId}: ${commentText}`; // Отображаем номер и текст комментария
+              commentsDiv.appendChild(commentElement);
+            }
+          }
+        } else {
+          commentsDiv.innerHTML = 'Нет комментариев';
+        }
       });
-    }
-    // Функция для переключения видимости комментариев
-    function toggleComments(button) {
-      const commentsDiv = button.nextElementSibling;
-      if (commentsDiv.style.display === 'none') {
-        commentsDiv.style.display = 'block';
-      } else {
-        commentsDiv.style.display = 'none';
-      }
     }
 
       // Фильтрация постов
@@ -481,6 +602,215 @@
       return matchesTitle && matchesDate && matchesKeywords;
     }
 
+    document.getElementById('openMapButton').onclick = function() {
+      document.getElementById('mapModal').style.display = 'block';
+      initializeMap(); // Функция для инициализации карты
+    };
+
+    document.getElementById('closeMapModal').onclick = function() {
+      document.getElementById('mapModal').style.display = 'none';
+    };
+
+    window.onclick = function(event) {
+      if (event.target === document.getElementById('mapModal')) {
+        document.getElementById('mapModal').style.display = 'none';
+      }
+    };
+
+    function initializeMap() {
+      const map = L.map('map').setView([55.7558, 37.6173], 13); // Установите начальную позицию карты
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Получение текущего местоположения
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const userLat = position.coords.latitude;
+          const userLng = position.coords.longitude;
+          map.setView([userLat, userLng], 15);
+          L.marker([userLat, userLng]).addTo(map)
+            .bindPopup('Вы здесь')
+            .openPopup();
+        });
+      }
+
+      // Загрузка меток из Firebase
+      loadMarkers(map);
+    }
+
+    // Функция для загрузки меток из Firebase
+    function loadMarkers(map) {
+      const markersRef = ref(database, 'markers'); // Путь к меткам в базе данных
+      onValue(markersRef, (snapshot) => {
+        if (snapshot.exists()) {
+          map.eachLayer((layer) => {
+            if (layer instanceof L.Marker) {
+              map.removeLayer(layer); // Удаляем предыдущие маркеры
+            }
+          });
+
+          snapshot.forEach((childSnapshot) => {
+            const markerData = childSnapshot.val();
+            const marker = L.marker([markerData.latitude, markerData.longitude]).addTo(map);
+            marker.bindPopup(`<strong>${markerData.title}</strong><br>${markerData.description}`);
+          });
+        } else {
+          console.log("Нет доступных меток.");
+        }
+      }, {
+        onlyOnce: true // Загружаем метки только один раз
+      });
+    }
+
+    const profileModal = document.getElementById('profileModal');
+    const editProfileButton = document.getElementById('editProfileButton');
+    const saveProfileButton = document.getElementById('saveProfileButton');
+    const closeProfileModal = document.getElementById('closeProfileModal');
+
+    const firstNameInput = document.getElementById('firstName');
+    const lastNameInput = document.getElementById('lastName');
+    const birthDateInput = document.getElementById('birthDate');
+
+    const displayFirstName = document.getElementById('displayFirstName');
+    const displayLastName = document.getElementById('displayLastName');
+    const displayBirthDate = document.getElementById('displayBirthDate');
+
+    // Open profile modal
+    function openProfileModal() {
+      profileModal.style.display = "block";
+      loadUserProfile(); // Load user data when opening the modal
+    }
+
+    // Close profile modal
+    closeProfileModal.onclick = function() {
+      profileModal.style.display = "none";
+    }
+
+    // Close modal when clicking outside of it
+    window.onclick = function(event) {
+      if (event.target === profileModal) {
+        profileModal.style.display = "none";
+      }
+    }
+
+    // Load user profile data from Firebase
+    function loadUserProfile() {
+      const userId = auth.currentUser.uid; // Get current user ID
+      const userRef = ref(database, 'users/' + userId);
+
+      get(userRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          displayFirstName.innerText = userData.firstName || '';
+          displayLastName.innerText = userData.lastName || '';
+          displayBirthDate.innerText = userData.birthDate || '';
+          firstNameInput.value = userData.firstName || '';
+          lastNameInput.value = userData.lastName || '';
+          birthDateInput.value = userData.birthDate || '';
+        } else {
+          console.log("User  data not found.");
+        }
+      }).catch((error) => {
+        console.error("Error loading user data:", error);
+      });
+    }
+
+    // Enable editing mode
+    editProfileButton.onclick = function() {
+      firstNameInput.style.display = "block";
+      lastNameInput.style.display = "block";
+      birthDateInput.style.display = "block";
+      saveProfileButton.style.display = "block";
+      editProfileButton.style.display = "none";
+    }
+
+    // Save user profile data
+    saveProfileButton.onclick = function() {
+      const userId = auth.currentUser.uid; // Get current user ID
+      const userRef = ref(database, 'users/' + userId);
+
+      const updatedUserData = {
+        firstName: firstNameInput.value,
+        lastName: lastNameInput.value,
+        birthDate: birthDateInput.value
+      };
+
+      set(userRef, updatedUserData).then(() => {
+        alert("Данные профиля успешно обновлены!");
+        loadUserProfile(); // Reload user data to reflect changes
+        firstNameInput.style.display = "none";
+        lastNameInput.style.display = "none";
+        birthDateInput.style.display = "none";
+        saveProfileButton.style.display = "none";
+        editProfileButton.style.display = "block";
+      }).catch((error) => {
+        console.error("Error updating user data:", error);
+      });
+    }
+
+    document.getElementById('profileButton').onclick = function() {
+      openProfileModal();
+    };
+
+    document.getElementById('changePasswordButton').onclick = function() {
+      document.getElementById('changePasswordModal').style.display = "block";
+    };
+
+    document.getElementById('closeChangePasswordModal').onclick = function() {
+      document.getElementById('changePasswordModal').style.display = "none";
+    };
+
+    // Закрытие модального окна при клике вне его
+    window.onclick = function(event) {
+      if (event.target === document.getElementById('changePasswordModal')) {
+        document.getElementById('changePasswordModal').style.display = "none";
+      }
+    };
+
+    document.getElementById('submitChangePassword').onclick = function() {
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (newPassword !== confirmPassword) {
+        alert("Пароли не совпадают");
+        return;
+      }
+
+      changePassword(currentPassword, newPassword);
+    };
+
+    function changePassword(currentPassword, newPassword) {
+      const user = auth.currentUser ;
+
+      if (user) {
+        const credential = EmailAuthProvider.credential(user.email, currentPassword);
+
+        user.reauthenticateWithCredential(credential).then(() => {
+          user.updatePassword(newPassword).then(() => {
+            alert("Пароль успешно изменен!");
+            document.getElementById('changePasswordModal').style.display = "none";
+          }).catch((error) => {
+            console.error("Ошибка при изменении пароля:", error);
+            alert("Не удалось изменить пароль: " + error.message);
+          });
+        }).catch((error) => {
+          console.error("Ошибка при повторной аутентификации:", error);
+          alert("Неверный текущий пароль.");
+        });
+      }
+    }
+
+    document.getElementById('changePasswordButton').onclick = function() {
+      const user = auth.currentUser ;
+      if (user) {
+        document.getElementById('currentUser Email').innerText = user.email; // Устанавливаем email текущего пользователя
+      }
+      document.getElementById('changePasswordModal').style.display = "block";
+    };
+
     window.onload = function() {
       const urlParams = new URLSearchParams(window.location.search);
       const bannerId = urlParams.get('bannerId');
@@ -497,17 +827,23 @@
 
   </script>
   <style>
-
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
+      background-color: #f4f4f4;
+      color: #333;
     }
     .post {
       border: 1px solid #ccc;
       padding: 10px;
       margin-bottom: 10px;
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
-    #loginModal, #createPostModal {
+
+    /* Модальные окна */
+    .modal {
       display: none;
       position: fixed;
       z-index: 1;
@@ -516,49 +852,19 @@
       width: 100%;
       height: 100%;
       overflow: auto;
-      background-color: rgb(0,0,0);
-      background-color: rgba(0,0,0,0.4);
-      padding-top: 60px;
-    }
-    .modal-content {
-      background-color: #fefefe;
-      margin: 5% auto;
-      padding: 20px;
-      border: 1px solid #888;
-      width: 80%;
-    }
-    .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-    }
-    .close:hover,
-    .close:focus {
-      color: black;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    #eventDetailsModal {
-      display: none;
-      position: fixed;
-      z-index: 1;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.4);
+      background-color: rgba(0, 0, 0, 0.7);
       padding-top: 60px;
     }
 
     .modal-content {
-      background-color: #fefefe;
+      background-color: #ffffff;
       margin: 5% auto;
       padding: 20px;
       border: 1px solid #888;
-      width: 80%;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
 
     .close {
@@ -570,9 +876,69 @@
 
     .close:hover,
     .close:focus {
-      color: black;
+      color: #000;
       text-decoration: none;
       cursor: pointer;
+    }
+
+    h2 {
+      color: #333;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    button {
+      background-color: #5cb85c;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #4cae4c;
+    }
+
+    .modal-footer {
+      text-align: right;
+    }
+
+    #mapModal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding-top: 60px;
+    }
+
+    /* Устранение дублирования стилей */
+    .modal-content {
+      background-color: #ffffff;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
   </style>
 </head>
@@ -583,10 +949,54 @@
 <h1>Посты</h1>
 <button id="loginButton">Войти</button>
 <button id="createPostButton">Создать пост</button>
+<button id="openMapButton">Открыть карту</button>
+<button id="profileButton">Профиль</button>
+<button id="openMarkersButton">Открыть список меток</button>
+
+<div id="markersModal" class="modal">
+  <div class="modal-content">
+    <span class="close" id="closeMarkersModal">&times;</span>
+    <h2>Список меток</h2>
+    <ul id="markersList"></ul>
+  </div>
+</div>
+
+<div id="profileModal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" id="closeProfileModal">&times;</span>
+    <h2>Профиль</h2>
+    <button id="changePasswordButton">Изменить пароль</button>
+    <input type="text" id="firstName" placeholder="Имя" required>
+    <input type="text" id="lastName" placeholder="Фамилия" required>
+    <input type="date" id="birthDate" placeholder="Дата рождения" required>
+    <button id="editProfileButton">Редактировать</button>
+    <button id="saveProfileButton" style="display:none;">Сохранить</button>
+    <div id="profileInfo">
+      <h3>Информация о пользователе:</h3>
+      <p><strong>Имя:</strong> <span id="displayFirstName"></span></p>
+      <p><strong>Фамилия:</strong> <span id="displayLastName"></span></p>
+      <p><strong>Дата рождения:</strong> <span id="displayBirthDate"></span></p>
+    </div>
+  </div>
+</div>
+
+<div id="changePasswordModal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" id="closeChangePasswordModal">&times;</span>
+    <h2>Изменить пароль</h2>
+    <p><strong>Email:</strong> <span id="currentUser Email"></span></p>
+    <input type="password" id="currentPassword" placeholder="Текущий пароль" required>
+    <input type="password" id="newPassword" placeholder="Новый пароль" required>
+    <input type="password" id="confirmPassword" placeholder="Подтвердите новый пароль" required>
+    <button id="submitChangePassword">Изменить пароль</button>
+  </div>
+</div>
 
 <div id="postsContainer"></div>
 
-<div id="loginModal">
+
+
+<div id="loginModal" class="modal">
   <div class="modal-content">
     <span class="close" id="closeModal">&times;</span>
     <h2>Вход</h2>
@@ -596,15 +1006,27 @@
   </div>
 </div>
 
-<div id="createPostModal">
+
+
+<div id="mapModal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" id="closeMapModal">&times;</span>
+    <h2>Карта</h2>
+    <div id="map" style="height: 400px;"></div>
+    <button id="ready_button">Готово</button>
+  </div>
+</div>
+
+
+
+<div id="createPostModal" class="modal">
   <div class="modal-content">
     <span class="close" id="closeCreatePostModal">&times;</span>
     <h2>Создать пост</h2>
-    <button onclick="uploadPost()">Создать пост</button>
     <select id="eventSelect">
       <option value="">Выберите мероприятие</option>
     </select>
-    <input type="text" id="postTitle" placeholder="Заголовок" required>
+    <input type=" text" id="postTitle" placeholder="Заголовок" required>
     <textarea id="postContent" placeholder="Содержание" required></textarea>
     <input type="file" id="postImage" accept="image/*" required>
     <button id="submitPostButton">Создать пост</button>
@@ -629,4 +1051,3 @@
 
 </body>
 </html>
-
