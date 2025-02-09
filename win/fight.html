@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>go</title>
+    <style>
+        /* Стили для модального окна */
+        .modal {
+            display: none; /* Скрыто по умолчанию */
+            position: fixed; /* Остается на месте */
+            z-index: 1000; /* На переднем плане */
+            left: 0;
+            top: 0;
+            width: 100%; /* Полная ширина */
+            height: 100%; /* Полная высота */
+            overflow: auto; /* Включает прокрутку, если необходимо */
+            background-color: rgba(0, 0, 0, 0.8); /* Полупрозрачный фон */
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 0; /* Убираем отступы */
+            border: none; /* Убираем рамку */
+            width: 100vw; /* Полная ширина */
+            height: 100vh; /* Полная высота */
+            overflow-y: auto; /* Прокрутка по вертикали, если необходимо */
+        }
+        .close, .Fclose, .matchesclose, .orclose {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .orclose:hover,
+        .orclose:focus,
+        .close:hover,
+        .close:focus,.matchesclose:hover,
+        .matchesclose:focus, .Fclose:hover, .Fclose:focus{
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .bracket {
+            margin-top: 20px;
+        }
+
+        .bracketу {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .name {
+            cursor: pointer;
+        }
+
+
+        .result {
+            width: 100%; /* Ширина 100% от родительского элемента */
+            min-height: 200px; /* Минимальная высота */
+            box-sizing: border-box; /* Учитывает padding и border в ширине и высоте */
+        }
+
+        .winner {
+            background-color: #d4edda;
+        }
+
+        #matchesContainer {
+            display: flex;
+        }
+
+        .column {
+            flex: 1; /* Занимает равное пространство */
+            margin: 5px;
+            background-color: lightblue;
+            border: 1px solid #000;
+            display: flex;
+            flex-direction: column; /* Располагаем элементы вертикально */
+        }
+
+        .category {
+            margin: 10px 0;
+            padding: 5px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+
+        .match {
+            margin: 5px;
+            padding: 10px;
+            border: 1px solid #000;
+            text-align: center;
+        }
+
+
+
+        .scoreboard {
+            background-color: #fff;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .participant {
+            width: 100%;
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+        }
+        .left { background-color: #007BFF; }
+        .right { background-color: #FF4136; }
+        h1 { margin: 0; font-size: 2.5em; }
+        .timer { font-size: 3em; margin: 20px 0; }
+        .score { font-size: 1.5em; margin: 10px 0; }
+        .button {
+            padding: 10px 15px;
+            font-size: 1em;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .button:hover { background-color: #0056b3; }
+        .controls { display: flex; justify-content: center; margin-top: 10px; }
+        .button-group { display: flex; flex-direction: column; align-items: center; margin: 10px; }
+        .button-group h3 { margin: 5px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <button id="showMatches">Показать текущие схватки</button>
+    <h1>Списки</h1>
+    <div id="recordContent"></div>
+    <div id="message"></div>
+</div>
+
+
+<!-- Модальное окно для отображения схваток -->
+<div id="matchesModal" class="modal">
+    <div class="modal-content">
+        <span class="matchesclose">&times;</span>
+        <h1>Текущие схватки</h1>
+        <div id="matchesContainer" ></div>
+    </div>
+</div>
+
+<!-- Модальное окно -->
+<div id="FModal" class="modal">
+    <div class="modal-content">
+        <span class="Fclose">&times;</span>
+        <div id="bracket" class="bracketу"></div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<!-- Модальное окно -->
+<div id="myModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <div id="Body"></div>
+    </div>
+</div>
+
+<!-- Модальное окно -->
+<div id="orModal" class="modal">
+    <div class="modal-content">
+        <span class="orclose">&times;</span>
+        <div id="orBody"></div>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+    const {createClient} = supabase;
+
+    const supabaseUrl = 'https://txocspjdfnxforkscyqx.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4b2NzcGpkZm54Zm9ya3NjeXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwMzQ1MTEsImV4cCI6MjA1MjYxMDUxMX0.aT0NXPsGuPzCyTTltG9nrd2iPDTDLoIeh_znGhdWgNA'; // Замените на ваш ключ
+
+    const _supabase = createClient(supabaseUrl, supabaseKey);
+
+    document.getElementById('showMatches').addEventListener('click', () => {
+        showMatches();
+    });
+
+
+    document.querySelector('.orclose').addEventListener('click', () => {
+        document.getElementById('orModal').style.display = 'none'; // Показать модальное окно
+    });
+
+
+    async function openModalWithNamesAll(user1, user2, setki, item) {
+        document.getElementById('orModal').style.display = 'block'; // Показать модальное окно
+
+        const modalBody = document.getElementById('orBody');
+
+        modalBody.innerHTML = `<div class="scoreboard">
+    <h1>Табло для джиу-джитсу</h1>
+    <div class="timer" id="timer">05:00</div>
+
+    <div class="participant left">
+        <div>
+            <h2 id="nameA">${user1.name}</h2>
+            <div class="score">Баллы: <span id="scoreA">0</span> | Адвентеджи: <span id="advA">0</span> | Пенальти: <span id="penA">0</span></div>
+        </div>
+        <div class="button-group" data-participant="A">
+            <h3>Баллы</h3>
+            <div>
+                <button class="button" onclick="updateScore('A', 1)">+1</button>
+                <button class="button"  onclick="updateScore('A', 2)">+2</button>
+                <button class="button"  onclick="updateScore('A', 3)">+3</button>
+                <button class="button"  onclick="updateScore('A', 4)">+4</button>
+                <button class="button"  onclick="updateScore('A', -1)">-1</button>
+            </div>
+            <h3>Адвентеджи</h3>
+            <div>
+                <button class="button"  onclick="updateAdv('A', 1)">+А</button>
+                <button class="button"  onclick="updateAdv('A', -1)">-А</button>
+            </div>
+            <h3>Пенальти</h3>
+            <div>
+                <button class="button"  onclick="updatePen('A', 1)">+П</button>
+                <button class="button"  onclick="updatePen('A', -1)">-П</button>
+            </div>
+            <div>
+                <button class="us"">${user1.name}</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="participant right">
+        <div>
+            <h2 id="nameB">${user2.name}</h2>
+            <div class="score">Баллы: <span id="scoreB">0</span> | Адвентеджи: <span id="advB">0</span> | Пенальти: <span id="penB">0</span></div>
+        </div>
+        <div class="button-group" data-participant="B">
+            <h3>Баллы</h3>
+            <div>
+                <button class="button"  onclick="updateScore('B', 1)">+1</button>
+                <button class="button"  onclick="updateScore('B', 2)">+2</button>
+                <button class="button"  onclick="updateScore('B', 3)">+3</button>
+                <button class="button"  onclick="updateScore('B', 4)">+4</button>
+                <button  class="button" onclick="updateScore('B', -1)">-1</button>
+            </div>
+            <h3>Адвентеджи</h3>
+            <div>
+                <button class="button"  onclick="updateAdv('B', 1)">+А</button>
+                <button class="button"  onclick="updateAdv('B', -1)">-А</button>
+            </div>
+            <h3>Пенальти</h3>
+            <div>
+                <button class="button"  onclick="updatePen('B', 1)">+П</button>
+                <button  class="button" onclick="updatePen('B', -1)">-П</button>
+            </div>
+            <div>
+                <button class="us">${user2.name}</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="startTimer()">Плей</button>
+        <button onclick="pauseTimer()">Пауза</button>
+        <button onclick="resumeTimer()">Продолжить</button>
+        <button onclick="resetTimer()">Сброс</button>
+        <button onclick="addTime(15)">+15 сек</button>
+        <button onclick="subTime(15)">-15 сек</button>
+    </div>
+</div>`
+
+        const usElements = modalBody.querySelectorAll('.us');
+        usElements.forEach(us => {
+            us.addEventListener('click', async () => {
+                const name = us.textContent;
+                const winner = (us.textContent === user1.name) ? user1.name : user2.name;
+                const loser = (us.textContent === user1.name) ? user2.name : user1.name;
+                alert(name + winner + loser);
+                await updateWinnerInFight(item, setki, winner, loser);
+                await delet(item, setki, winner, loser)
+                document.getElementById('orModal').style.display = 'none';
+            });
+        });
+    }
+
+    let timerInterval, seconds = 300;
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            if (seconds > 0) {
+                seconds--;
+                document.getElementById('timer').innerText = formatTime(seconds);
+            } else {
+                clearInterval(timerInterval);
+            }
+        }, 1000);
+    }
+
+    function pauseTimer() { clearInterval(timerInterval); }
+    function resumeTimer() { startTimer(); }
+    function resetTimer() {
+        clearInterval(timerInterval);
+        seconds = 300;
+        document.getElementById('timer').innerText = formatTime(seconds);
+        resetScores();
+    }
+    function addTime(secondsToAdd) { updateTimer(secondsToAdd); }
+    function subTime(secondsToSub) { updateTimer(-secondsToSub); }
+
+    function updateTimer(delta) {
+        seconds = Math.max(0, seconds + delta);
+        document.getElementById('timer').innerText = formatTime(seconds);
+    }
+
+    function formatTime(seconds) {
+        const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const secs = String(seconds % 60).padStart(2, '0');
+        return `${minutes}:${secs}`;
+    }
+
+    function updateScore(participant, points) {
+        updateValue(participant, 'score', points);
+    }
+
+    function updateAdv(participant, adv) {
+        updateValue(participant, 'adv', adv);
+    }
+
+    function updatePen(participant, pen) {
+        updateValue(participant, 'pen', pen);
+    }
+
+    function updateValue(participant, type, change) {
+        const element = document.getElementById(`${type}${participant}`);
+        element.innerText = Math.max(0, parseInt(element.innerText) + change);
+    }
+
+    function resetScores() {
+        ['A', 'B'].forEach(participant => {
+            ['score', 'adv', 'pen'].forEach(type => {
+                document.getElementById(`${type}${participant}`).innerText = '0';
+            });
+        });
+    }
+
+    async function delet(item, setki, win, loser) {
+        const postId = new URLSearchParams(window.location.search).get('postId');
+        let matches = setki.matches || [];
+        let matchFound = false; // Флаг для отслеживания, была ли найдена схватка
+
+        // Ищем схватку для удаления
+        for (let i = 0; i < matches.length; i++) {
+            const match = matches[i];
+            if (match.category === item.name && match.winner === null &&
+                (match.participant2 === loser || match.participant1 === loser)) {
+                matches.splice(i, 1); // Удаляем схватку из массива
+                matchFound = true; // Устанавливаем флаг, что схватка найдена
+                break; // Выходим из цикла после удаления
+            }
+        }
+
+        // Если схватка была найдена и удалена, обновляем базу данных
+        if (matchFound) {
+            const { data, error } = await _supabase
+                .from('setki')
+                .update({ matches: matches })
+                .eq('post_id', postId);
+
+            if (error) {
+                alert('Ошибка при обновлении схваток: ' + error.message);
+            } else {
+                alert('Схватки успешно обновлены в базе данных: ' + JSON.stringify(data));
+            }
+        } else {
+            alert('Схватка не найдена для удаления.');
+        }
+    }
+
+
+
+
+    async function showMatches() {
+        const numberOfColumns = 3; // Укажите количество столбцов, которые хотите добавить
+        const postId = new URLSearchParams(window.location.search).get('postId');
+
+        const {data: setki, error} = await _supabase
+            .from('setki')
+            .select('*')
+            .eq('post_id', postId)
+            .single();
+        if (error) {
+            console.error('Ошибка загрузки записей:', error);
+            document.getElementById('recordContent').innerText = 'Ошибка загрузки записей.';
+            return;
+        }
+
+        const {data: lists, err} = await _supabase
+            .from('lists')
+            .select('*')
+            .eq('post_id', postId);
+        if (err) {
+            console.error('Ошибка загрузки записей:', err);
+            document.getElementById('recordContent').innerText = 'Ошибка загрузки записей.';
+            return;
+        }
+
+        const container = document.getElementById('matchesContainer');
+        container.innerHTML = ''; // Очистка контейнера
+
+        const matches = setki.matches || []; // Получаем массив схваток
+
+        // Создаем колонки
+        const columns = [];
+        for (let i = 0; i < numberOfColumns; i++) {
+            const newDiv = document.createElement('div');
+            newDiv.className = 'column';
+            newDiv.id = 'block' + (i + 1); // Уникальный id для каждого столбца
+            container.appendChild(newDiv);
+            columns.push(newDiv); // Сохраняем ссылки на колонки
+        }
+
+        // Группируем схватки по категориям
+        const categoryMap = {};
+        matches.forEach(match => {
+            if (!categoryMap[match.category]) {
+                categoryMap[match.category] = [];
+            }
+            categoryMap[match.category].push(match);
+        });
+
+        // Отображение схваток по категориям
+        const columnCounts = Array(numberOfColumns).fill(0); // Массив для отслеживания количества схваток в каждом столбце
+
+        for (const category in categoryMap) {
+            const categoryMatches = categoryMap[category];
+
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'category';
+            categoryDiv.innerHTML = `<h3>${category}</h3>`; // Заголовок категории
+
+
+
+            categoryMatches.forEach(match => {
+                const matchDiv = document.createElement('div');
+                matchDiv.className = 'match';
+
+
+
+                matchDiv.innerHTML = `
+                <p>${match.participant1} vs ${match.participant2}</p>
+                <p>Статус: ${match.status}</p>
+                <p>Победитель: ${match.winner || 'Не определен'}</p>
+            `;
+
+                if (match.winner) {
+                    // matchDiv.style.display = "none";
+                }
+
+                matchDiv.addEventListener('click', () => {
+                    const participant1 = match.participant1;
+                    const participant2 = match.participant2;
+                    const winner = match.winner || 'Не определен';
+                    const usersData = lists.flatMap(list => list.users || []);
+                    const user1 = usersData.find(user => user.name === participant1);
+                    const user2 = usersData.find(user => user.name === participant2);
+                    if (winner === "Не определен") {
+                        setki.data.forEach(item => {
+                            if (item.name === match.category) {
+                                openModalWithNamesAll(user1, user2, setki, item);
+                            }
+                        });
+                    } else {
+                        if (confirm(`Вы хотите поменять ${user1.name} местами с ${user2.name} `)) {
+                            setki.data.forEach(item => {
+                                if (item.name === match.category) {
+                                    openModalWithNamesAll(user1, user2, setki, item);
+                                }
+                            });
+                        }
+                    }
+                });
+
+                categoryDiv.appendChild(matchDiv); // Добавляем схватку в категорию
+            });
+
+            // Находим столбец с наименьшим количеством схваток
+            const minColumnIndex = columnCounts.indexOf(Math.min(...columnCounts));
+            columns[minColumnIndex].appendChild(categoryDiv); // Добавляем категорию в столбец с наименьшим количеством схваток
+            columnCounts[minColumnIndex] += categoryMatches.length; // Обновляем количество схваток в этом столбце
+        }
+
+        // Открытие модального окна
+        document.getElementById('matchesModal').style.display = 'block';
+    }
+
+
+
+    // Закрытие модального окна
+    document.querySelector('.matchesclose').onclick = function () {
+        document.getElementById('matchesModal').style.display = 'none';
+    }
+
+    document.querySelector('.Fclose').onclick = function () {
+        document.getElementById('FModal').style.display = 'none';
+    }
+
+    async function loadRecords() {
+        const postId = new URLSearchParams(window.location.search).get('postId');
+
+        const {data: lists, err} = await _supabase
+            .from('lists')
+            .select('*')
+            .eq('post_id', postId);
+
+        if (err) {
+            console.error('Ошибка загрузки записей:', err);
+            document.getElementById('recordContent').innerText = 'Ошибка загрузки записей.';
+            return;
+        }
+
+        const {data: setki, error: fetchError} = await _supabase
+            .from('setki')
+            .select('*')
+            .eq('post_id', postId)
+            .single();
+
+        if (!setki) {
+            alert('Ошибка при проверке существующей сетки:' + fetchError);
+            await _supabase
+                .from('setki')
+                .insert([{post_id: postId, category: "", data: {}}]);
+            loadRecords();
+            return
+        }
+
+        const usersData = lists.flatMap(list => list.users || []);
+        // alert(JSON.stringify(usersData))
+        const categoryContainer = document.createElement('div');
+        categoryContainer.innerHTML = '<h3>Готовые категории</h3>';
+
+        const categoriesMap = {};
+
+        usersData.forEach(user => {
+            const key = `${user.weight}-${user.kat}-${user.level}`;
+            if (!categoriesMap[key]) {
+                categoriesMap[key] = [];
+            }
+            categoriesMap[key].push(user);
+        });
+
+        const categories = []; // Массив для хранения категорий
+        let categoryId = 1; // Уникальный идентификатор для каждой категории
+        for (const [key, usersGroup] of Object.entries(categoriesMap)) {
+            const categoryBlock = document.createElement('div');
+            const categoryTitle = document.createElement('h4');
+            const categoryKey = document.createElement('h4');
+            categoryKey.innerText = `${key}`;
+            categoryTitle.innerText = `Категория ${categoryId}`;
+            categoryTitle.style.cursor = 'pointer'
+            const names = usersGroup.map(user => user.name);
+            const shuffledNames = names.sort(() => Math.random() - 0.5);
+            categories.push({name: `Категория ${categoryId}`, data: shuffledNames});
+            categoryTitle.onclick = () => {
+                if (confirm(`Вы хотите запустить категорию?`)) {
+                    setki.data.forEach(item => {
+                        if (item.name === categoryTitle.textContent) {
+                            const names = item.list; // Извлекаем имена из базы данных
+                            const modalBody = document.getElementById('modalBody');
+                            modalBody.innerHTML = ''; // Очистка содержимого модального окна
+                            const userList = document.createElement('ul');
+                            names.forEach(name => {
+                                const user = usersGroup.find(user => user.name === name);
+                                const listItem = document.createElement('li');
+                                if (user) {
+                                    listItem.innerText = `${name} (ID: ${user.id})`;
+                                } else {
+                                    listItem.innerText = name; // Если не найден, просто выводим имя
+                                }
+                                userList.appendChild(listItem);
+                            });
+
+
+                            modalBody.appendChild(userList);
+                            generateBracket(names, usersGroup, setki, item); // Генерируем сетку на основе имен
+                        }
+                    });
+                }
+            }
+            categoryBlock.appendChild(categoryKey);
+            categoryBlock.appendChild(categoryTitle);
+            categoryContainer.appendChild(categoryBlock);
+            categoryId++;
+        }
+
+        document.getElementById('recordContent').appendChild(categoryContainer);
+        for (const category of categories) {
+            await saveBracket(postId, category.name, category.data, setki);
+        }
+    }
+
+    async function saveBracket(postId, name, data, setki) {
+        const content = {
+            name: name,
+            list: data
+        };
+        const existingData = Array.isArray(setki.data) ? setki.data : [];
+        const existingIndex = existingData.findIndex(item => item.name === name);
+        if (existingIndex === -1) {
+            existingData.push(content);
+            const {error} = await _supabase
+                .from('setki')
+                .update({data: existingData})
+                .eq('post_id', postId);
+            if (error) {
+                document.getElementById('message').innerText = `Ошибка добавления записи: ${error.message || error}`;
+            } else {
+                document.getElementById('message').innerText = `успешно в базе добавлено+`;
+            }
+        } else {
+            document.getElementById('message').innerText = `Блок с именем "${name}" уже существует.`;
+        }
+    }
+
+    function generateBracket(names, usersGroup, setki, item) {
+        document.querySelector("#FModal").style.display = "block"
+        const numNames = names.length;
+        if( names.length > 6) {
+            let powerOfTwo = 1;
+            while (powerOfTwo * 2 < numNames) {
+                powerOfTwo *= 2;
+            }
+            const totalMatches = powerOfTwo * 2; // Общее количество схваток
+            const emptyMatches = totalMatches - numNames; // Количество схваток с одним участником
+            const shuffledNames = names;
+            currentBracket = []; // Очищаем предыдущую сетку
+            const bracket = document.getElementById('bracket');
+            bracket.innerHTML = ''; // Очищаем предыдущую сетку
+
+            if (totalMatches) {
+                let r = 1;
+                for (let a = 2; totalMatches / 2 >= a;) {
+                    let b = 1;
+                    for (let i = 0; totalMatches / 2 > i;) {
+                        const Div = document.createElement('div');
+                        Div.className = 'match';
+                        Div.id = r + '.' + b;
+                        Div.textContent = Div.id;
+                        bracket.appendChild(Div);
+                        b++;
+                        i += a;
+                    }
+                    r += 1;
+                    a *= 2;
+                }
+            }
+
+            // Создаем схватки
+            let c = 1;
+            for (let i = 0; i < totalMatches - emptyMatches; i++) {
+                const matchDiv = document.createElement('div');
+                matchDiv.className = 'match';
+                matchDiv.id = 0 + "." + c;
+                c++;
+                if (i < numNames) {
+                    if (i < numNames - emptyMatches) {
+                        matchDiv.innerHTML = `<span class="name">${shuffledNames[i]}</span> vs <span class="name">${shuffledNames[i + 1]}</span>`;
+                        i++;
+                    } else {
+                        matchDiv.innerHTML = `<span class="name">${shuffledNames[i]}</span>`;
+                    }
+                } else {
+                    matchDiv.textContent = '—';
+                }
+                bracket.appendChild(matchDiv);
+                currentBracket.push(matchDiv);
+            }
+
+            const btn = document.createElement('div');
+            btn.addEventListener('click', () => {
+                const i = document.createElement('div');
+                i.innerHTML = `
+            <h2>Детали схватки:</h2>
+            <p>Результат:</p>
+           <textarea id="winnerI"  class="result">${JSON.stringify(item.winner, null, 2)}</textarea>
+            <p>Имя 1: <input type="text" id="nameI" value="${item.name}"></p>
+            <p>Имя 2: <input type="text" id="listI" value="${item.list}"></p>
+            <button id="reload">Сохранить</button>
+
+        `;
+                bracket.appendChild(i);
+
+                const reload = document.querySelector('#reload')
+                const winnerI = document.querySelector('#winnerI')
+                const nameI = document.querySelector('#nameI')
+                const listI = document.querySelector('#listI')
+                reload.addEventListener('click', () => {
+                    rData(JSON.parse(winnerI.value), nameI.value, listI.value, setki, item)
+                });
+            });
+            btn.innerHTML = `<button id="editMatchButton">Исправить схватку</button>`
+            bracket.appendChild(btn)
+
+
+            // Обработчик клика на родительский элемент (match)
+            const matchElements = document.querySelectorAll('.match');
+            matchElements.forEach(matchElement => {
+                matchElement.addEventListener('click', () => {
+                    const names = matchElement.querySelectorAll('.name');
+                    if (names.length === 2) {
+                        const user1 = usersGroup.find(user => user.name === names[0].textContent);
+                        const user2 = usersGroup.find(user => user.name === names[1].textContent);
+                        openModalWithNames(user1, user2, setki, item); // Открываем модальное окно с двумя именами
+                    }
+
+                    // if (names.length === 1) {
+                    //     const user1 = usersGroup.find(user => user.name === names[0].textContent) || null;
+                    //     if (confirm(`Вы хотите поменять ${user1.name} местами с тем, кто его выиграл?`)) {
+                    //         swapWinnerAndLoser(setki, item, user1.name);
+                    //     }
+                    // }
+                });
+            });
+            up(setki, item)
+            addMatchesToDatabase(item, setki);
+        } else {
+            const shuffledNames = names;
+
+            const bracket = document.getElementById('bracket');
+            bracket.innerHTML = ''; // Очищаем предыдущую сетку
+
+            const table = document.createElement('table');
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = '<th>Матч</th>';
+            table.appendChild(headerRow);
+
+            // Генерация матчей с фиксированным порядком
+            const matches = generateMatches(shuffledNames);
+
+            // Создание строк для матчей
+            matches.forEach(match => {
+                const matchRow = document.createElement('tr');
+                const matchCell = document.createElement('td');
+                matchCell.innerText = `${match[0]} vs ${match[1]}`;
+                matchRow.appendChild(matchCell);
+
+
+                // Создание ячейки для ввода результата
+                const winnerInput = document.createElement('select');
+                winnerInput.innerHTML = `
+                <option value="">Выберите победителя</option>
+                <option value="${match[0]}">${match[0]}</option>
+                <option value="${match[1]}">${match[1]}</option>
+            `;
+
+                const existingMatch = setki.matches.find(m =>
+                    m.category === item.name &&
+                    ((m.participant1 === match[0] && m.participant2 === match[1]) ||
+                        (m.participant1 === match[1] && m.participant2 === match[0]))
+                );
+
+                // Если победитель найден, устанавливаем его в селект
+                if (existingMatch && existingMatch.winner) {
+                    winnerInput.value = existingMatch.winner;
+                }
+
+                const winnerCell = document.createElement('td');
+                winnerCell.appendChild(winnerInput);
+                matchRow.appendChild(winnerCell);
+
+                winnerInput.addEventListener('change', function() {
+                    const selectedWinner = this.value;
+
+                    // Проверяем, выбран ли победитель
+                    if (selectedWinner) {
+                        const loser = selectedWinner === match[0] ? match[1] : match[0];
+                        alert(selectedWinner + loser )
+                        updateWinnerInFight(item,  setki,  selectedWinner, loser);
+                    }
+                });
+
+
+                table.appendChild(matchRow);
+            });
+            bracket.appendChild(table);
+
+            addMatchesToDatabaseKrug(setki, item, matches);
+            checkAllSelects();
+
+
+            const btn = document.createElement('div');
+            btn.addEventListener('click', () => {
+                if (item) {
+                    const i = document.createElement('div');
+                    i.innerHTML = `
+            <h2>Детали схватки:</h2>
+            <p>Результат:</p>
+           <textarea id="winnerI"  class="result">${JSON.stringify(item.winner, null, 2)}</textarea>
+            <p>Имя 1: <input type="text" id="nameI" value="${item.name}"></p>
+            <p>Имя 2: <input type="text" id="listI" value="${item.list}"></p>
+            <button id="reload">Сохранить</button>
+
+        `;
+                    bracket.appendChild(i);
+
+                    const reload = document.querySelector('#reload')
+                    const winnerI = document.querySelector('#winnerI')
+                    const nameI = document.querySelector('#nameI')
+                    const listI = document.querySelector('#listI')
+                    reload.addEventListener('click', () => {
+                        rData(JSON.parse(winnerI.value), nameI.value, listI.value, setki, item)
+                    });
+                } else {
+                    alert("hui")
+                }
+            });
+            btn.innerHTML = `<button id="editMatchButton">Исправить схватку</button>`
+            bracket.appendChild(btn)
+        }
+    }
+
+    async function addMatchesToDatabaseKrug(setki, item, matches) {
+        const postId = new URLSearchParams(window.location.search).get('postId');
+        const existingMatches = setki.matches || []; // Получаем существующие матчи
+
+        // Создаём массив для хранения новых матчей
+        const matchesArray = matches.map(match => ({
+            participant1: match[0],
+            participant2: match[1],
+            winner: null,
+            status: 'в процессе',
+            category: item.name // Добавляем имя категории
+        }));
+
+        // Фильтруем новые матчи, чтобы исключить дубликаты
+        const filteredMatches = matchesArray.filter(newMatch => {
+            return !existingMatches.some(existingMatch =>
+                existingMatch.category === item.name &&
+                ((existingMatch.participant1 === newMatch.participant1 && existingMatch.participant2 === newMatch.participant2) ||
+                    (existingMatch.participant1 === newMatch.participant2 && existingMatch.participant2 === newMatch.participant1))
+            );
+        });
+
+        // Обновляем массив матчей
+        const updatedMatches = existingMatches.concat(filteredMatches);
+
+        // Отладочное сообщение
+        console.log('Обновлённые матчи:', updatedMatches);
+
+        // Обновляем базу данных
+        const { error } = await _supabase
+            .from('setki')
+            .update({ matches: updatedMatches })
+            .eq('post_id', postId);
+
+        if (error) {
+            alert('Ошибка при обновлении схваток: ' + error.message);
+        } else {
+            alert('Схватки успешно добавлены');
+        }
+    }
+
+    async function checkAllSelects() {
+        const selects = document.querySelectorAll('select');
+        const winnerCount = {};
+        let allFilled = true;
+        selects.forEach(select => {
+            const value = select.value;
+            if (value === "") {
+                allFilled = false; // Если хотя бы один select не заполнен
+            } else {
+                winnerCount[value] = (winnerCount[value] || 0) + 1;
+            }
+        });
+        if (allFilled) {
+            let maxWins = 0;
+            let winner = '';
+            for (const name in winnerCount) {
+                if (winnerCount[name] > maxWins) {
+                    maxWins = winnerCount[name];
+                    winner = name;
+                }
+            }
+            alert(`Участник с наибольшим количеством побед: ${winner} (${maxWins} побед)`);
+        }
+    }
+
+    function generateMatches(names) {
+        const matches = [];
+        const numParticipants = names.length;
+
+        if (numParticipants === 2) {
+            matches.push([names[0], names[1]]);
+        } else if (numParticipants === 3) {
+            matches.push([names[0], names[1]], [names[1], names[2]], [names[0], names[2]]);
+        } else if (numParticipants === 4) {
+            matches.push([names[0], names[1]], [names[2], names[3]], [names[0], names[2]], [names[1], names[3]], [names[0], names[3]], [names[1], names[2]]);
+        } else if (numParticipants === 5) {
+            matches.push([names[0], names[1]], [names[2], names[3]], [names[0], names[4]], [names[1], names[2]], [names[0], names[3]], [names[1], names[4]], [names[0], names[2]], [names[1], names[3]], [names[2], names[4], [names[3], names[4]]]);
+        } else if (numParticipants === 6) {
+            matches.push([names[0], names[1]], [names[2], names[3]], [names[4], names[5]], [names[0], names[5]], [names[1], names[3]], [names[2], names[4]], [names[0], names[3]], [names[1], names[4]], [names[2], names[5]], [names[0], names[4]], [names[1], names[2]], [names[3], names[5]], [names[0], names[2]], [names[1], names[5]], [names[3], names[4]]);
+        }
+
+        return matches;
+    }
+
+    function up(setki, item) {
+        const matches = setki.matches || [];
+        for (let match of matches) {
+            const matchElements = document.querySelectorAll('.match'); // Получаем все блоки с именами
+            matchElements.forEach(matchElement => {
+                const names = matchElement.querySelectorAll('.name');
+                if (names.length === 2) {
+                    const name1 = names[0].textContent;
+                    const name2 = names[1].textContent;
+                    if(name1 === match.winner || name2 === match.winner) {
+                        moveName2(match.winner, matchElement.id, item, setki)
+                    }
+                }
+            });
+        }
+    }
+
+    async function openModalWithNames(user1, user2, setki, item) {
+        document.getElementById('FModal').style.display = 'none'; // Показать модальное окно
+        document.getElementById('myModal').style.display = 'block'; // Показать модальное окно
+        alert("d")
+
+        const modalBody = document.getElementById('Body');
+        modalBody.innerHTML = `<h2>Выбранные имена:</h2>
+                           <p class="us">${user1.name}</p>
+                           <p> ${user1.id}</p>
+                           <p class="us">${user2.name}</p>
+                           <p> ${user2.id}</p>`;
+
+        const usElements = document.querySelectorAll('.us');
+        const nameElements = document.querySelectorAll('.name');
+        usElements.forEach(us => {
+            us.addEventListener('click', async () => {
+                nameElements.forEach(nameElement => {
+                    if (us.textContent === nameElement.textContent) {
+                        const name = nameElement.textContent;
+                        const matchId = nameElement.parentElement.id;
+                        const winner = (us.textContent === user1.name) ? user1.name : user2.name;
+                        const loser = (us.textContent === user1.name) ? user2.name : user1.name;
+
+                        moveName(loser, winner, matchId, item, setki);
+                        document.getElementById('myModal').style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
+
+    async function updateWinnerInFight(item, setki, win, loser) {
+        const postId = new URLSearchParams(window.location.search).get('postId');
+        const matches = setki.matches || [];
+        let matchFound = false; // Флаг для отслеживания, была ли найдена схватка
+        for (let match of matches) {
+            if (match.category === item.name &&
+                ((match.participant1 === win && match.participant2 === loser) ||
+                    (match.participant1 === loser && match.participant2 === win))) {
+                match.winner = win; // Обновляем значение победителя
+                matchFound = true; // Устанавливаем флаг, что схватка найдена
+                break; // Выходим из цикла после обновления
+            }
+        }
+        const { data, error } = await _supabase
+            .from('setki')
+            .update({ matches: matches })
+            .eq('post_id', postId);
+
+            if (error) {
+                alert('Ошибка при обновлении схваток: ' + error.message);
+            } else {
+                alert('Схватки успешно обновлены в базе данных: ' + JSON.stringify(data));
+                await addMatchesToDatabase(item, setki)
+            }
+    }
+
+    async function addMatchesToDatabase(item, setki) {
+        const postId = new URLSearchParams(window.location.search).get('postId');
+
+        let matchesArray = []; // Массив для хранения схваток
+
+        const matchElements = document.querySelectorAll('.match');
+        matchElements.forEach(matchElement => {
+            const parts = matchElement.id.split('.');
+            const firstPart = parts[0]; // Получаем первую часть (0)
+            const secondPart = parts[1]; // Получаем вторую часть (1)
+            const names = matchElement.querySelectorAll('.name');
+            if (names.length === 2) {
+                matchesArray.push({
+                    participant1: names[0].textContent,
+                    participant2: names[1].textContent,
+                    winner: null,
+                    status: 'в процессе',
+                    matchid: matchElement.id
+                });
+            } else if(names.length === 1 && (firstPart === 0 ||  firstPart === "0")){
+                matchesArray.push({
+                    participant1: names[0].textContent,
+                    participant2: "пустой пользователь",
+                    winner: names[0].textContent,
+                    status: 'в процессе',
+                });
+            }
+        });
+        // alert("wwwwwwwwwww" + JSON.stringify(matchesArray))
+        // await addMatchesToDatabase(newMatches = matchesArray, categoryName = item.name, setki);
+        const existingMatches = setki.matches || [];
+        const updatedMatches = existingMatches.concat(matchesArray.filter(newMatch => {
+                return !existingMatches.some(existingMatch =>
+                    existingMatch.category === item.name &&
+                    ((existingMatch.participant1 === newMatch.participant1 && existingMatch.participant2 === newMatch.participant2) ||
+                        (existingMatch.participant1 === newMatch.participant2 && existingMatch.participant2 === newMatch.participant1))
+                );
+            }).map(match => ({
+                ...match,
+                category: item.name // Добавляем имя схватки
+            }))
+        );
+        const { error } = await _supabase
+            .from('setki')
+            .update({ matches: updatedMatches })
+            .eq('post_id', postId);
+
+        if (error) {
+            alert('Ошибка при обновлении схваток:'+ error);
+        } else {
+            alert('Схватки успешно добавлены');
+        }
+    }
+
+    async function moveName2(winner, matchId, item, setki) {
+        let targetId;
+
+        const [level, matchNumber] = matchId.split('.').map(Number);
+
+        if (level === 0) {
+            targetId = `1.${Math.ceil(matchNumber / 2)}`;
+        } else if (level === 1) {
+            targetId = `2.${Math.ceil(matchNumber / 2)}`;
+        } else if (level === 2) {
+            targetId = `3.${Math.ceil(matchNumber / 2)}`;
+        } else {
+            alert('победитель: ' + winner);
+            return;
+        }
+        const targetMatch = document.getElementById(targetId);
+        if (targetMatch) {
+            const newNameElement = document.createElement('span');
+            newNameElement.className = 'name';
+            newNameElement.textContent = winner;
+            targetMatch.appendChild(newNameElement);
+            const currentMatch = document.getElementById(matchId);
+            const nameElements = currentMatch.querySelectorAll('.name');
+            nameElements.forEach(element => {
+                if (element.textContent === winner) {
+                    currentMatch.removeChild(element);
+                }
+            });
+        } else {
+            alert('победитель сетки: ' + winner);
+        }
+    }
+
+
+    async function moveName(loser, winner, matchId, item, setki) {
+        alert("ddddddddddd")
+        let targetId;
+
+        const [level, matchNumber] = matchId.split('.').map(Number);
+
+        if (level === 0) {
+            targetId = `1.${Math.ceil(matchNumber / 2)}`;
+        } else if (level === 1) {
+            targetId = `2.${Math.ceil(matchNumber / 2)}`;
+        } else if (level === 2) {
+            targetId = `3.${Math.ceil(matchNumber / 2)}`;
+        }  else if (level === 3) {
+            targetId = `4.${Math.ceil(matchNumber / 2)}`;
+        }else {
+            alert('победитель: ' + winner);
+            return;
+        }
+        const targetMatch = document.getElementById(targetId);
+        if (targetMatch) {
+            const newNameElement = document.createElement('span');
+            newNameElement.className = 'name';
+            newNameElement.textContent = winner;
+            targetMatch.appendChild(newNameElement);
+            const currentMatch = document.getElementById(matchId);
+            const nameElements = currentMatch.querySelectorAll('.name');
+            nameElements.forEach(element => {
+                if (element.textContent === winner) {
+                    currentMatch.removeChild(element);
+                }
+            });
+            await updateWinnerInFight(item, setki, winner, loser);
+        } else {
+            alert('победитель сетки: ' + winner);
+            await updateWinnerInFight(item, setki, winner, loser);
+        }
+    }
+
+    async function rData(w, n, l, setki, item) {
+        const postId = new URLSearchParams(window.location.search).get('postId');
+        const listArray = l.split(',').map(item => item.trim()); // Разделяем строку по запятой и убираем пробелы
+        const content = {
+            name: n,
+            list: listArray, // Используем массив вместо строки
+            winner: w // Передаем объект winner
+        };
+        if (setki) {
+            const existingData = Array.isArray(setki.data) ? setki.data : [];
+            // Проверяем, существует ли уже блок с таким именем
+            const existingIndex = existingData.findIndex(f => f.name === item.name);
+            existingData[existingIndex] = content;
+            alert(JSON.stringify(existingData));
+            const {error} = await _supabase
+                .from('setki')
+                .update({data: existingData})
+                .eq('post_id', postId);
+            if (error) {
+                console.error('Ошибка при обновлении данных:', error);
+            } else {
+                console.log('Данные успешно обновлены в базе данных');
+            }
+        }
+    }
+
+
+
+    window.onload = function () {
+        loadRecords();
+    }
+</script>
+</body>
+</html>
