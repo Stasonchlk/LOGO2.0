@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карта с меткой по адресу</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        /* Задаем размеры для карты */
+        #map {
+            height: 400px; /* Высота карты */
+            width: 100%; /* Ширина карты */
+        }
+    </style>
+</head>
+<body>
+<h1>Карта с меткой по адресу</h1>
+<input type="text" id="address" placeholder="Введите адрес" />
+<button id="searchBtn">Найти</button>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    // Создаем карту и задаем начальные координаты и уровень масштабирования
+    var map = L.map('map').setView([55.7558, 37.6173], 12); // Пример: Москва
+
+    // Добавляем слой карты OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Функция для геокодирования адреса
+    function geocodeAddress(address) {
+        var url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    var lat = data[0].lat;
+                    var lon = data[0].lon;
+                    // Устанавливаем метку на карте
+                    L.marker([lat, lon]).addTo(map)
+                        .bindPopup(`Адрес: ${address}`)
+                        .openPopup();
+                    // Центрируем карту на метке
+                    map.setView([lat, lon], 12);
+                } else {
+                    alert('Адрес не найден');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+            });
+    }
+
+    // Обработчик события нажатия кнопки
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        var address = document.getElementById('address').value;
+        if (address) {
+            geocodeAddress(address);
+        } else {
+            alert('Пожалуйста, введите адрес');
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Олимпийская сетка</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .bracket {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .match {
+      margin: 5px;
+      padding: 10px;
+      border: 1px solid #000;
+      width: 200px;
+      text-align: center;
+    }
+    .name {
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<h1>Создание олимпийской сетки</h1>
+<textarea id="namesInput" rows="5" cols="30" placeholder="Введите имена через запятую"></textarea><br>
+<button onclick="generateBracket()">Создать сетку</button>
+<div id="bracket" class="bracket"></div>
+<script>
+  let currentBracket = [];
+
+  function generateBracket() {
+    const namesInput = document.getElementById('namesInput').value;
+    const names = namesInput.split(',').map(name => name.trim()).filter(name => name);
+    alert(names)
+    const numNames = names.length;
+
+    // Находим ближайшую степень двойки ниже количества имен
+    let powerOfTwo = 1;
+    while (powerOfTwo * 2 < numNames) {
+      powerOfTwo *= 2;
+    }
+    const totalMatches = powerOfTwo * 2; // Общее количество схваток
+    const emptyMatches = totalMatches - numNames; // Количество схваток с одним участником
+
+    // Перемешиваем имена
+    const shuffledNames = names.sort(() => Math.random() - 0.5);
+    currentBracket = []; // Очищаем предыдущую сетку
+    const bracket = document.getElementById('bracket');
+    bracket.innerHTML = ''; // Очищаем предыдущую сетку
+
+
+    if(totalMatches) {
+      let r = 1
+      for(let a = 2;totalMatches/2 >= a;) {
+        let b = 1;
+        alert(totalMatches)
+        for (let i = 0; totalMatches/2 > i;) {
+          const Div = document.createElement('div');
+          Div.className = 'match';
+          Div.id = r + '.' + b;
+          Div.textContent = Div.id;
+          bracket.appendChild(Div)
+          b++
+          i += a
+        }
+        r += 1
+        a *= 2
+      }
+    }
+
+    // Создаем схватки
+    let c = 1
+    for (let i = 0; i < totalMatches-emptyMatches; i++) {
+      const matchDiv = document.createElement('div');
+      matchDiv.className = 'match';
+      matchDiv.id = 0 + "." +  c;
+      c++
+      if (i < numNames) {
+        // Заполняем схватки именами
+        if (i < numNames - emptyMatches) {
+          // Первые (numNames - emptyMatches) схватки с двумя участниками
+          matchDiv.innerHTML = `<span class="name">${shuffledNames[i]}</span> vs <span class="name">${shuffledNames[i + 1]}</span>`;
+          i++; // Пропускаем следующий элемент, так как он уже использован
+        } else {
+          // Остальные схватки с одним участником
+          matchDiv.innerHTML = `<span class="name">${shuffledNames[i]}</span>`;
+        }
+      } else {
+        // Пустые схватки
+        matchDiv.textContent = '—';
+      }
+      bracket.appendChild(matchDiv);
+      currentBracket.push(matchDiv); // Сохраняем текущую схватку
+    }
+
+    // Добавляем обработчики событий для имен
+    const nameElements = document.querySelectorAll('.name');
+    nameElements.forEach(nameElement => {
+      nameElement.addEventListener('click', () => {
+        const name = nameElement.textContent;
+        const matchId = nameElement.parentElement.id;
+        moveName(name, matchId);
+      });
+    });
+  }
+
+  function moveName(name, matchId) {
+    let targetId;
+
+    // Извлекаем уровень и номер матча из matchId
+    const [level, matchNumber] = matchId.split('.').map(Number);
+
+    // Определяем целевой ID на основе уровня и номера матча
+    if (level === 0) {
+      // Уровень 0 (первый раунд)
+      targetId = `1.${Math.ceil(matchNumber / 2)}`; // Переход к следующему уровню
+    } else if (level === 1) {
+      // Уровень 1 (второй раунд)
+      targetId = `2.${Math.ceil(matchNumber / 2)}`; // Переход к следующему уровню
+    } else if (level === 2) {
+      // Уровень 2 (третий раунд)
+      targetId = `3.${Math.ceil(matchNumber / 2)}`; // Переход к следующему уровню
+    } else if (level === 3) {
+      // Уровень 2 (третий раунд)
+      targetId = `4.${Math.ceil(matchNumber / 2)}`; // Переход к следующему уровню
+    } else {
+      alert('победитель: ' + name);
+      return;
+    }
+
+    // Находим целевой блок
+    const targetMatch = document.getElementById(targetId);
+    if (targetMatch) {
+      // Добавляем имя в целевой блок
+      const newNameElement = document.createElement('span');
+      newNameElement.className = 'name';
+      newNameElement.textContent = name;
+      newNameElement.addEventListener('click', () => {
+        moveName(name, targetId);
+      });
+      targetMatch.appendChild(newNameElement);
+
+      // Удаляем имя из текущего блока
+      const currentMatch = document.getElementById(matchId);
+      const nameElements = currentMatch.querySelectorAll('.name');
+      nameElements.forEach(element => {
+        if (element.textContent === name) {
+          currentMatch.removeChild(element);
+        }
+      });
+    } else {
+      alert('победитель сетки: ' + name);
+    }
+  }
+
+</script>
+</body>
+</html>
