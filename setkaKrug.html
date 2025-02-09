@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Круговая Сетка с Максимальными Промежутками</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #matches {
+      margin-top: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .winner {
+      background-color: #d4edda;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Генерация Круговой Сетки</h1>
+<input type="text" id="userNames" placeholder="Введите имена через запятую">
+<button onclick="generateRoundRobin()">Сгенерировать Сетку</button>
+
+<div id="matches"></div>
+<div id="overallWinner" style="margin-top: 20px; font-weight: bold;"></div>
+
+<script>
+  let matchResults = {}; // Объект для хранения результатов матчей
+
+  function generateRoundRobin() {
+    const input = document.getElementById('userNames').value;
+    const names = input.split(',').map(name => name.trim()).filter(name => name);
+
+    // Проверка на количество участников
+    if (names.length < 2 || names.length > 6) {
+      alert('Количество участников должно быть от 2 до 6.');
+      return;
+    }
+
+    const shuffledNames = names.sort(() => Math.random() - 0.5);
+
+    const matchesDiv = document.getElementById('matches');
+    matchesDiv.innerHTML = ''; // Очистка предыдущих матчей
+    matchResults = {}; // Сброс результатов
+
+    const table = document.createElement('table');
+    const headerRow = document.createElement('tr');
+    headerRow.innerHTML = '<th>Матч</th>';
+    table.appendChild(headerRow);
+
+    // Генерация матчей с фиксированным порядком
+    const matches = generateMatches(shuffledNames);
+
+    // Создание строк для матчей
+    matches.forEach(match => {
+      const matchRow = document.createElement('tr');
+      const matchCell = document.createElement('td');
+      matchCell.innerText = `${match[0]} vs ${match[1]}`;
+      matchRow.appendChild(matchCell);
+
+      // Создание ячейки для ввода результата
+      const winnerInput = document.createElement('select');
+      winnerInput.innerHTML = `
+                <option value="">Выберите победителя</option>
+                <option value="${match[0]}">${match[0]}</option>
+                <option value="${match[1]}">${match[1]}</option>
+            `;
+      const winnerCell = document.createElement('td');
+      winnerCell.appendChild(winnerInput);
+      matchRow.appendChild(winnerCell);
+
+      // Обработчик изменения выбора победителя
+      winnerInput.addEventListener('change', function() {
+        const selectedWinner = this.value;
+        if (selectedWinner) {
+          // Удаляем выделение у всех ячеек
+          const allCells = matchRow.querySelectorAll('td');
+          allCells.forEach(cell => cell.classList.remove('winner'));
+
+          // Выделяем ячейку победителя
+          const winnerCell = Array.from(allCells).find(cell => cell.innerText.includes(selectedWinner));
+          if (winnerCell) {
+            winnerCell.classList.add('winner');
+          }
+
+          // Увеличиваем счетчик побед для выбранного победителя
+          matchResults[selectedWinner]++;
+        }
+      });
+
+      table.appendChild(matchRow);
+    });
+
+    matchesDiv.appendChild(table);
+  }
+
+  function generateMatches(names) {
+    const matches = [];
+    const numParticipants = names.length;
+
+    if (numParticipants === 2) {
+      matches.push([names[0], names[1]]);
+    } else if (numParticipants === 3) {
+      matches.push([names[0], names[1]], [names[1], names[2]], [names[0], names[2]]);
+    } else if (numParticipants === 4) {
+      matches.push([names[0], names[1]], [names[2], names[3]], [names[0], names[2]], [names[1], names[3]], [names[0], names[3]], [names[1], names[2]]);
+    } else if (numParticipants === 5) {
+      matches.push([names[0], names[1]], [names[2], names[3]], [names[0], names[4]], [names[1], names[2]], [names[0], names[3]], [names[1], names[4]], [names[0], names[2]], [names[1], names[3]], [names[2], names[4], [names[3], names[4]]]);
+    } else if (numParticipants === 6) {
+      matches.push([names[0], names[1]], [names[2], names[3]], [names[4], names[5]], [names[0], names[5]], [names[1], names[3]], [names[2], names[4]], [names[0], names[3]], [names[1], names[4]], [names[2], names[5]], [names[0], names[4]], [names[1], names[2]], [names[3], names[5]], [names[0], names[2]], [names[1], names[5]], [names[3], names[4]]);
+    }
+
+    return matches;
+  }
+</script>
+
+</body>
+</html>

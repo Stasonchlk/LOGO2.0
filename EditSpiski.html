@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Создание списка</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .block {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px dashed #aaa;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Создание списка</h1>
+  <div id="controls">
+    <button id="addTextBtn">Добавить текстовое поле</button>
+    <button id="addImageBtn">Добавить фото</button>
+  </div>
+  <div id="contentBlocks"></div>
+  <button id="saveListBtn">Сохранить список</button>
+  <button id="ReLoadRecordBtn">Вернуть запись</button>
+  <div id="message"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+  const { createClient } = supabase;
+
+  const supabaseUrl = 'https://txocspjdfnxforkscyqx.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4b2NzcGpkZm54Zm9ya3NjeXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwMzQ1MTEsImV4cCI6MjA1MjYxMDUxMX0.aT0NXPsGuPzCyTTltG9nrd2iPDTDLoIeh_znGhdWgNA'; // Замените на ваш ключ
+
+
+  const _supabase = createClient(supabaseUrl, supabaseKey);
+
+  document.getElementById('addTextBtn').onclick = addTextBlock;
+  document.getElementById('addImageBtn').onclick = addImageBlock;
+  document.getElementById('saveListBtn').onclick = saveList;
+  document.getElementById('ReLoadRecordBtn').onclick = loadPostForEditing;
+
+
+
+  async function loadPostForEditing() {
+    alert("dsdsd")
+    const postId = new URLSearchParams(window.location.search).get('postId');
+    localStorage.setItem('postId', postId)
+    alert(postId)
+    if (!postId) {
+      alert('asasaПост не найден.');
+      return;
+    }
+    const { data: lists, error } = await _supabase
+            .from('lists')
+            .select('*')
+            .eq('post_id', postId)
+            .single();
+    if (error) {
+      console.error('Ошибка загрузки поста:', error);
+      return;
+    }
+    const contentBlocks = lists.content;
+
+    contentBlocks.forEach(lists => {
+      switch (lists.type) {
+        case 'image':
+          addImageBlock(lists.src);
+          break;
+        case 'text':
+          addTextBlock(lists.content);
+          break;
+        default:
+          break;
+      }
+    });
+  }
+
+  function saveBlocks() {
+    const blocks = Array.from(document.querySelectorAll('.block')).map(block => {
+      const inputs = block.querySelectorAll('input');
+      if (block.querySelector('h3') && block.querySelector('h3').innerText === 'Контакты') {
+        return {
+          type: 'contact',
+          content: Array.from(inputs).map(input => input.value)
+        };
+      } else if (block.querySelector('h3') && block.querySelector('h3').innerText === 'Данные') {
+        return {
+          type: 'data',
+          content: Array.from(inputs).map(input => input.value)
+        };
+      } else if (block.querySelector('h3') && block.querySelector('h3').innerText === 'Изображение') {
+        return { type: 'image', src: block.querySelector('img').src };
+      } else if (block.querySelector('h3') && block.querySelector('h3').innerText === 'Текст'){
+        return { type: 'text', content: Array.from(inputs).map(input => input.value) };
+      }
+    }).filter(Boolean);
+    localStorage.setItem('contentBlocksEspiski', JSON.stringify(blocks));
+  }
+
+  function restoreBlocks() {
+    const blocks = JSON.parse(localStorage.getItem('contentBlocksEspiski')) || [];
+    const contentBlocks = document.getElementById('contentBlocks');
+
+    // Очищаем контейнер перед добавлением новых блоков
+    contentBlocks.innerHTML = '';
+
+    blocks.forEach(block => {
+      switch (block.type) {
+        case 'image':
+          addImageBlock(block.src);
+          break;
+
+        case 'text':
+          addTextBlock(block.content);
+          break;
+
+        default:
+          break;
+      }
+    });
+  }
+
+  function addImageBlock(src) {
+    const contentBlocks = document.getElementById('contentBlocks');
+    const imageBlock = document.createElement('div');
+    imageBlock.className = 'block';
+
+    imageBlock.innerHTML = `
+        <h3>Изображение</h3>
+    `;
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.maxWidth = '100%';
+    imageBlock.appendChild(img);
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async function(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        img.src = e.target.result;
+
+        // Загрузка изображения в Supabase
+        const uniqueFileName = `${Date.now()}_${file.name.substring(0, 20)}`;
+        const { data: uploadData, error: uploadError } = await _supabase.storage.from('post-images').upload(`public/${uniqueFileName}`, file);
+
+        if (uploadError) {
+          console.error('Ошибка загрузки изображения:', uploadError);
+          return;
+        } else {
+          saveBlocks();
+        }
+
+      };
+      reader.readAsDataURL(file);
+    };
+
+    imageBlock.appendChild(fileInput);
+
+    const deleteBtn = document.createElement('span');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.innerText = '✖';
+    deleteBtn.onclick = () => {
+      imageBlock.remove();
+      saveBlocks();
+    };
+
+    imageBlock.appendChild(deleteBtn);
+    contentBlocks.appendChild(imageBlock);
+    saveBlocks();
+  }
+
+  function addTextBlock(content = []) {
+    const contentBlocks = document.getElementById('contentBlocks');
+    const textBlock = document.createElement('div');
+    textBlock.className = 'block';
+
+    textBlock.innerHTML = `
+        <h3>Текст</h3>
+        <input type="text" placeholder="Введите текст . . ." value="${content[0] || ''}" />
+
+    `;
+    // Создаем кнопку удаления
+    const deleteBtn = document.createElement('span');
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.innerText = '✖';
+    deleteBtn.onclick = () => {
+      textBlock.remove(); // Удаляем блок
+      saveBlocks(); // Сохраняем изменения
+    };
+
+    // Добавляем обработчик события input для сохранения текста
+    const inputField = textBlock.querySelector('input');
+    inputField.addEventListener('input', () => {
+      saveBlocks(); // Сохраняем блоки при каждом вводе текста
+    });
+
+    // Добавляем текст и кнопку удаления в основной блок
+    textBlock.appendChild(deleteBtn); // Добавляем кнопку удаления
+    contentBlocks.appendChild(textBlock); // Добавляем весь блок в контейнер
+    saveBlocks(); // Сохраняем блоки
+  }
+
+  async function saveList() {
+    const contentBlocks = Array.from(document.querySelectorAll('.block')).map(block => {
+      const inputs = block.querySelectorAll('input');
+      if (block.querySelector('h3') && block.querySelector('h3').innerText === 'Изображение') {
+        return { type: 'image', src: block.querySelector('img').src };
+      } else if (block.querySelector('h3') && block.querySelector('h3').innerText === 'Текст'){
+        return { type: 'text', content: Array.from(inputs).map(input => input.value) };
+      }
+    }).filter(Boolean);
+
+    const postId = new URLSearchParams(window.location.search).get('postId'); // Получаем postId из URL
+    alert(postId)
+    const { error } = await _supabase
+            .from('lists')
+            .update({content: contentBlocks })
+            .eq('post_id', postId); // Указываем, какой пост обновляем
+
+    if (error) {
+      console.error('Ошибка сохранения списка:', error);
+      document.getElementById('message').innerText = `Ошибка при сохранении списка: ${error.message || error}`;
+    } else {
+      document.getElementById('message').innerText = 'Список успешно сохранен!';
+      document.getElementById('contentBlocks').innerHTML = ''; // Очистка блоков после сохранения
+    }
+  }
+
+  window.onload = function() {
+    const blocks = JSON.parse(localStorage.getItem('contentBlocksEspiski'))
+    if (blocks && blocks.length > 0) {
+    } else {
+      alert("tttttttttttttttttttttttttt")
+      loadPostForEditing();
+    }
+    restoreBlocks();
+  }
+
+</script>
+</body>
+</html>

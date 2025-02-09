@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход и Регистрация</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="Login">
+    <div>
+        <div id="userInfo"></div>
+
+        <h2>Вход</h2>
+        <input type="email" id="loginEmail" placeholder="Email" required>
+        <input type="password" id="loginPassword" placeholder="Пароль" required>
+        <button onclick="login()">Войти</button>
+    </div>
+</div>
+
+</body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+    const { createClient } = supabase;
+
+    const supabaseUrl = 'https://txocspjdfnxforkscyqx.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4b2NzcGpkZm54Zm9ya3NjeXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwMzQ1MTEsImV4cCI6MjA1MjYxMDUxMX0.aT0NXPsGuPzCyTTltG9nrd2iPDTDLoIeh_znGhdWgNA'; // Замените на ваш ключ
+
+    const _supabase = createClient(supabaseUrl, supabaseKey);
+
+    function OpenWin(i) {
+        window.location.href = i;
+    }
+
+    async function login() {
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
+
+        try {
+            const { user, error } = await _supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                alert(`Ошибка входа: ${error.message}`);
+            } else {
+                alert('Успешный вход!');
+                localStorage.setItem('userEmail', email);
+                localStorage.setItem('Pass', password);
+                OpenWin('win/index.html');
+            }
+        } catch (err) {
+            alert(err); // Выводим ошибку в консоль
+        }
+    }
+
+</script>
+</html>

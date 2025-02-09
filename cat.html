@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Записи</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="container">
+  <button id="go">запускк сеток</button>
+  <h1>Записи</h1>
+  <div id="rContent"></div>
+</div>
+<div id="message"></div>
+
+<div class="container">
+  <h1>Списки</h1>
+  <div id="recordContent"></div>
+  <div id="userContent"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+  const { createClient } = supabase;
+
+  const supabaseUrl = 'https://txocspjdfnxforkscyqx.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4b2NzcGpkZm54Zm9ya3NjeXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwMzQ1MTEsImV4cCI6MjA1MjYxMDUxMX0.aT0NXPsGuPzCyTTltG9nrd2iPDTDLoIeh_znGhdWgNA'; // Замените на ваш ключ
+
+
+  const _supabase = createClient(supabaseUrl, supabaseKey);
+
+  function go(o) {
+    window.location.href = `go.html?postId=${o}`;
+  }
+
+  async function loadRecords() {
+    const postId = new URLSearchParams(window.location.search).get('postId'); // Получаем postId из URL
+
+    const { data: records, error } = await _supabase
+            .from('records')
+            .select('*')
+            .eq('post_id', postId); // Фильтрация по post_id
+
+    if (error) {
+      console.error('Ошибка загрузки записей:', error);
+      document.getElementById('rContent').innerText = 'Ошибка загрузки записей.';
+      return;
+    }
+
+    document.getElementById('go').onclick = () => go(postId);
+
+
+    const categories = kat(records); // Получаем категории
+    const levels = level(records); // Получаем уровни
+    const weights = weight(records); // Получаем веса
+
+
+    const { data: lists, err } = await _supabase
+            .from('lists')
+            .select('*')
+            .eq('post_id', postId); // Фильтрация по post_id
+
+    if (err) {
+      console.error('Ошибка загрузки записей:', err);
+      document.getElementById('recordContent').innerText = 'Ошибка загрузки записей.';
+      return;
+    }
+
+    displayRecords(lists);
+    DRecords(records, categories, levels, weights);
+
+  }
+
+  function kat(i) {
+    const categories = [];
+    i.forEach((record) => {
+      record.content.forEach(item => {
+        if (item.type === 'reg' && item.content.category) {
+          categories.push(item.content.category);
+        }
+      });
+    });
+    return [...new Set(categories)].join(' '); // Удаляем дубликаты и объединяем в строку
+  }
+
+  function level(i) {
+    const levels = [];
+    i.forEach((record) => {
+      record.content.forEach(item => {
+        if (item.type === 'reg' && item.content.level) {
+          levels.push(item.content.level);
+        }
+      });
+    });
+    return [...new Set(levels)].join(' '); // Удаляем дубликаты и объединяем в строку
+  }
+
+  function weight(i) {
+    const weights = [];
+    i.forEach((record) => {
+      record.content.forEach(item => {
+        if (item.type === 'reg' && item.content.weight) {
+          weights.push(item.content.weight);
+        }
+      });
+    });
+    return [...new Set(weights)].join(' '); // Удаляем дубликаты и объединяем в строку
+  }
+
+  function addOptions(selectId, options) {
+    const selectElement = document.getElementById(selectId);
+    options.forEach(option => {
+      const optionElement = document.createElement('option');
+      optionElement.value = option;
+      optionElement.textContent = option;
+      selectElement.appendChild(optionElement);
+    });
+  }
+
+  function DRecords(records, categories, levels, weights) {
+    const recordContent = document.getElementById('rContent');
+    records.forEach((record, index) => {
+      const recordItem = document.createElement('div');
+      recordItem.innerHTML = record.content.map(item => {
+       if (item.type === 'reg') {
+          const regContent = item.content;
+          let regHtml = `<div class="reg"><p>Это поле регистрации</p>`;
+          if (regContent.email) regHtml += `<input type="email" id="email-${index}" placeholder="E-mail"/>`;
+          if (regContent.number) regHtml += `<input type="number" id="numTel-${index}" placeholder="Номер телефона"/>`;
+          if (regContent.fio) regHtml += `<input type="text" id="name-${index}" placeholder="ФИО спортсмена"/>`;
+          if (regContent.category) regHtml += `<label for="kat-${index}">Категория:</label>
+                            <select id="kat-${index}"></select>`;
+          if (regContent.level) regHtml += `<label for="level-${index}">Уровень подготовки:</label>
+                            <select id="level-${index}" class="mySelect"></select>`;
+          if (regContent.weight) regHtml += `<label for="weight-${index}">Весовая категория:</label>
+                            <select id="weight-${index}"></select>`;
+          if (regContent.team) regHtml += `<input type="text" id="comand-${index}" placeholder="Команда"/>`;
+          regHtml += `<button onclick="saveReg(${index})">Сохранить</button>`;
+          regHtml += `</div>`;
+          return regHtml;
+        }
+      }).join('');
+      recordContent.appendChild(recordItem);
+      if (categories) addOptions(`kat-${index}`, categories.split(' ')); // Разбиваем строку на массив
+      if (levels) addOptions(`level-${index}`, levels.split(' ')); // Разбиваем строку на массив
+      if (weights) addOptions(`weight-${index}`, weights.split(' ')); // Разбиваем строку на массив
+    });
+  }
+
+  async function saveReg(index) {
+    const name = document.getElementById(`name-${index}`)?.value || '';
+    const age = document.getElementById(`numTel-${index}`)?.value || '';
+    const Email = document.getElementById(`email-${index}`)?.value || '';
+    const kat = document.getElementById(`kat-${index}`)?.value || '';
+    const level = document.getElementById(`level-${index}`)?.value || '';
+    const weight = document.getElementById(`weight-${index}`)?.value || '';
+    const comand = document.getElementById(`comand-${index}`)?.value || '';
+
+    // Создаем объект newUser  с пустыми строками вместо null
+    const newUser  = {
+      id: null, // Идентификатор будет установлен позже
+      name: name,
+      age: age,
+      Email: Email,
+      kat: kat,
+      level: level,
+      weight: weight,
+      comand: comand
+    };
+
+    const postId = new URLSearchParams(window.location.search).get('postId');
+
+    // Получаем текущих пользователей
+    const { data: currentList, error: fetchError } = await _supabase
+            .from('lists')
+            .select('users')
+            .eq('post_id', postId)
+            .single();
+
+    if (fetchError) {
+      document.getElementById('message').innerText = `Ошибка при получении записи: ${fetchError.message || fetchError}`;
+      return;
+    }
+
+    // Определяем новый ID для пользователя
+    const currentUsers = currentList.users || [];
+    const newId = currentUsers.length > 0 ? Math.max(...currentUsers.map(user => user.id)) + 1 : 1; // Получаем максимальный ID и добавляем 1
+
+    // Устанавливаем новый ID
+    newUser .id = newId;
+
+    // Добавляем нового пользователя к существующим
+    const updatedUsers = [...currentUsers, newUser ];
+
+    // Обновляем запись с новыми пользователями
+    const { error } = await _supabase
+            .from('lists')
+            .update({ users: updatedUsers })
+            .eq('post_id', postId);
+
+    if (error) {
+      document.getElementById('message').innerText = `Ошибка при сохранении записи: ${error.message || error}`;
+    } else {
+      document.getElementById('message').innerText = 'Пользователь успешно добавлен!';
+      // Очищаем поля ввода
+      document.getElementById(`name-${index}`).value = '';
+      document.getElementById(`numTel-${index}`).value = '';
+      document.getElementById(`email-${index}`).value = '';
+      document.getElementById(`comand-${index}`).value = '';
+    }
+  }
+
+  function displayRecords(records) {
+    const recordContent = document.getElementById('recordContent');
+    recordContent.innerHTML = ''; // Очищаем содержимое перед добавлением новых записей
+
+    // Создаем таблицу для отображения пользователей
+    const userTable = document.createElement('table');
+    userTable.style.width = '100%';
+    userTable.style.borderCollapse = 'collapse';
+    userTable.style.marginBottom = '20px';
+
+    // Заголовки таблицы
+    const headerRow = document.createElement('tr');
+    const headers = ['Имя', 'Email', 'Номер телефона', 'Вес', 'Команда', 'Категория', 'Уровень', 'Действия'];
+    headers.forEach(header => {
+      const th = document.createElement('th');
+      th.innerText = header;
+      th.style.border = '1px solid #000';
+      th.style.padding = '8px';
+      th.style.textAlign = 'left';
+      headerRow.appendChild(th);
+    });
+    userTable.appendChild(headerRow);
+
+    // Добавляем пользователей
+    records.forEach((record, index) => {
+      const userData = record.users || [];
+      userData.forEach(user => {
+        const row = document.createElement('tr');
+
+          row.innerHTML = `
+        <td style="display: none"><input type="hidden" id="userId-${user.id}" value="${user.id || ''}" /></td>
+        <td><input type="text" id="name-${user.id}" value="${user.name || ''}" /></td>
+        <td><input type="email" id="email-${user.id}" value="${user.Email || ''}" /></td>
+        <td><input type="number" id="numTel-${user.id}" value="${user.age || ''}" /></td>
+        <td><input type="text" id="weight-${user.id}" value="${user.weight || ''}" /></td>
+        <td><input type="text" id="comand-${user.id}" value="${user.comand || ''}" /></td>
+        <td><input type="text" id="kat-${user.id}" value="${user.kat || ''}" /></td>
+        <td><input type="text" id="level-${user.id}" value="${user.level || ''}" /></td>
+        <td><button onclick="saveUser (${user.id})">Сохранить</button></td>
+    `;
+
+        row.style.border = '1px solid #000';
+        userTable.appendChild(row);
+      });
+    });
+
+    recordContent.appendChild(userTable);
+    const usersData = records.flatMap(record => record.users || []);
+    displayCategories(usersData);
+  }
+
+
+  function displayCategories(users) {
+    const categoryContainer = document.createElement('div');
+    categoryContainer.innerHTML = '<h3>Готовые категории</h3>';
+
+    const categoriesMap = {};
+
+    users.forEach(user => {
+      const key = `${user.weight}-${user.kat}-${user.level}`;
+      if (!categoriesMap[key]) {
+        categoriesMap[key] = [];
+      }
+      categoriesMap[key].push(user);
+    });
+
+    for (const [key, usersGroup] of Object.entries(categoriesMap)) {
+      const categoryBlock = document.createElement('div');
+      categoryBlock.innerHTML = `<h4>Категория: ${key}</h4>`;
+      const userList = document.createElement('ul');
+
+      usersGroup.forEach(user => {
+        const listItem = document.createElement('li');
+        listItem.innerText = `${user.name}`;
+        userList.appendChild(listItem);
+      });
+
+      categoryBlock.appendChild(userList);
+      categoryContainer.appendChild(categoryBlock);
+    }
+
+    document.getElementById('recordContent').appendChild(categoryContainer);
+  }
+
+  async function saveUser(index) {
+    const id = document.getElementById(`userId-${index}`).value;
+    const name = document.getElementById(`name-${index}`).value;
+    const email = document.getElementById(`email-${index}`).value;
+    const numTel = document.getElementById(`numTel-${index}`).value;
+    const weight = document.getElementById(`weight-${index}`).value;
+    const comand = document.getElementById(`comand-${index}`).value;
+    const kat = document.getElementById(`kat-${index}`).value;
+    const level = document.getElementById(`level-${index}`).value;
+
+
+    const postId = new URLSearchParams(window.location.search).get('postId');
+
+    // Получаем текущий список пользователей
+    const { data: currentList, error: fetchError } = await _supabase
+            .from('lists')
+            .select('users')
+            .eq('post_id', postId)
+            .single();
+
+    if (fetchError) {
+      document.getElementById('message').innerText = `Ошибка при получении записи: ${fetchError.message || fetchError}`;
+      return;
+    }
+
+    // Проверяем, существует ли users
+    if (!currentList.users) {
+      document.getElementById('message').innerText = 'Нет пользователей для обновления.';
+      return;
+    }
+
+    // Обновляем данные пользователя
+    const updatedUsers = currentList.users.map((user) => {
+      // Сравниваем id
+      if (id === user.id.toString()) { // Приводим user.id к строке для сравнения
+        return {
+          ...user,
+          name: name,
+          Email: email,
+          age: numTel,
+          weight: weight,
+          comand: comand,
+          kat: kat,
+          level: level
+        };
+      }
+      return user;
+    });
+
+    // Обновляем запись с новыми пользователями
+    const { error } = await _supabase
+            .from('lists')
+            .update({ users: updatedUsers })
+            .eq('post_id', postId);
+
+    if (error) {
+      document.getElementById('message').innerText = `Ошибка при сохранении записи: ${error.message || error}`;
+    } else {
+      document.getElementById('message').innerText = 'Данные пользователя успешно обновлены!';
+    }
+  }
+
+
+  window.onload = function () {
+    loadRecords();
+  }
+</script>
+</body>
+</html>
