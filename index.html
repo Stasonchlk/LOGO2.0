@@ -1,103 +1,188 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Вход и Регистрация</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Результаты ЕГЭ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #e6eaf7, #ffffff);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .logo {
+            margin-right: 20px;
+        }
+
+        .logo img {
+            height: 130px;
+        }
+
+        .title {
+            line-height: 1.4;
+        }
+
+        h1 {
+            font-size: 30px;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .content h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .content a {
+            font-size: 14px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .user-info {
+            text-align: right;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f5f5f5;
+        }
+
+        .green {
+            color: green;
+            font-weight: bold;
+        }
+
+        .footer-note {
+            font-size: 12px;
+            margin-top: 20px;
+            color: #444;
+        }
+
+        .footer-note strong {
+            color: red;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
-    <div id="userInfo">d</div>
-    <div id="authButtons">
-        <button id="loginBtn" onclick="OpenWin('Login.html');">Вход</button>
-        <button id="registerBtn" onclick="OpenWin('Reg.html');">Регистрация</button>
+    <header>
+        <div class="logo">
+            <img src="ege_3.jpg" alt="ЕГЭ логотип">
+        </div>
+        <div class="title">
+            <div class="subtitle">Официальный информационный портал</div>
+            <h1>ЕДИНОГО ГОСУДАРСТВЕННОГО ЭКЗАМЕНА</h1>
+        </div>
+    </header>
+    <div class="content">
+        <h2>Ваши результаты ЕГЭ</h2>
+        <a href="#">График публикации результатов экзаменов</a>
+        <div class="user-info">
+            Григорьев С.А. <a href="#">Выход</a>
+        </div>
+        <table>
+            <thead>
+            <tr>
+                <th>Дата экзамена</th>
+                <th>Предмет</th>
+                <th>Тестовый балл</th>
+                <th>Минимальный балл</th>
+                <th>Статус экзамена</th>
+                <th>Апелляция</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>04.12.2024</td>
+                <td><a href="#">Сочинение</a></td>
+                <td class="green">зачёт</td>
+                <td></td>
+                <td>Оценённый результат</td>
+                <td>нет</td>
+            </tr>
+            <tr>
+                <td>08.04.2025</td>
+                <td><a href="#">Обществознание</a></td>
+                <td class="green">42</td>
+                <td>42</td>
+                <td>Оценённый результат</td>
+                <td>нет</td>
+            </tr>
+            <tr>
+                <td>14.04.2025</td>
+                <td><a href="#">Русский язык</a></td>
+                <td class="green">49</td>
+                <td>24</td>
+                <td>Оценённый результат</td>
+                <td>нет</td>
+            </tr>
+            <tr>
+                <td>17.04.2025</td>
+                <td><a href="#">Математика профильная</a></td>
+                <td class="green">88</td>
+                <td>27</td>
+                <td>Оценённый результат</td>
+                <td>нет</td>
+            </tr>
+            <tr>
+                <td>18.04.2025</td>
+                <td>Биология</td>
+                <td></td>
+                <td></td>
+                <td>Нет результата</td>
+                <td></td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="footer-note">
+            <p><strong>Внимание!</strong><br>
+                В случае если:<br>
+                — напротив предмета установлен статус «Результат скрыт»<br>
+                — напротив предмета установлен статус «Экзамен обработан» и при этом значение тестового балла пустое<br>
+                Вам необходимо обратиться в РЦОИ Вашего региона для получения результатов.</p>
+            <p><strong>Обращаем Ваше внимание</strong>, что результаты ЕГЭ могут быть изменены в связи с проведением процедуры апелляции и/или перепроверок результатов на региональном и федеральном уровнях. Рекомендуем осуществлять повторные проверки Ваших результатов ЕГЭ.</p>
+        </div>
     </div>
-    <button id="profileBtn" onclick="OpenWin('Profile.html')" style="display: none;">Профиль</button>
-    <button id="postsBtn" onclick="OpenWin('CreatePost.html');">Создать пост</button>
 </div>
-
-<div class="posts-preview">
-    <h2>Созданные посты</h2>
-    <div id="postsContainer"></div>
-</div>
-
-<p>дизайн похож на сайт шака спорт, однако кнопки вход и регистрация - сразу видны при входе и отображаются на верхнем баре ( в том числе
-    там отображаются название и лого, а также кнопка открытия всплывающего меню с некоторыми другими кнопками - ссылками на другие части моего сайта).
-    этот бар должен иметь несколько вариантов высоты и отображаемых на нем элементов, при скроле он остается приклеенным к верху страницы
-    но его высота становиться меньше и теперь на ней только название и кнопка открытия всплывающего меню, куда и переносятся кнопки вход и регистрация
-
-    Сводки для всего сайта: БОЛЬШИНСТВО КОДА НЕТ, ЗАДАЧА СДЕЛАТЬ ВСЕ ПО СВОДКАМ И УЖЕ РЕАЛИЗОВАННОМУ КОДУ + РЕАЛИИЗОВВЫВАЦ ВСЕ, ЧТО ПОСЧИТАЕШЬ НУЖНЫМ ИЛИ ПРИКОЛЬНЫМ!!! можно брать идеи с шака спорт, однако куда лучше реализовать все по своему! нужен свой общий дизайн и цветовая гамма,
-    по возможности лого и тп. Можешь реализовывать любые идеи!!!! По-возможности добавить анимации
-    там, где это уместно. Этот сайт является одним из немногих в данной тематике и моя задача отличиться качеством. Фон сайта не должен быть белым,
-    можешь делать разные фоны для разных блоков. Возможно добавление информационных блоков (не обязательно). Вся информация не должна быть кучей, только самое важное,
-    повторюсь: по надобности я могу реализовать все что угодно!!!
-</p>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<script>
-    const { createClient } = supabase;
-
-    const supabaseUrl = 'https://txocspjdfnxforkscyqx.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4b2NzcGpkZm54Zm9ya3NjeXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwMzQ1MTEsImV4cCI6MjA1MjYxMDUxMX0.aT0NXPsGuPzCyTTltG9nrd2iPDTDLoIeh_znGhdWgNA'; // Замените на ваш ключ
-
-    const _supabase = createClient(supabaseUrl, supabaseKey);
-
-    function OpenWin(i) {
-        window.location.href = i;
-    }
-
-    function displayUserInfo() {
-        const userEmail = localStorage.getItem('userEmail');
-        const Pass = localStorage.getItem('Pass');
-
-        if (userEmail) {
-            document.getElementById('userInfo').innerText = `Пользователь: ${userEmail} (Password: ${Pass})`;
-            document.getElementById('authButtons').style.display = 'none'; // Скрываем кнопки входа и регистрации
-            document.getElementById('profileBtn').style.display = 'block'; // Показываем кнопку профиля
-        } else {
-            document.getElementById('userInfo').innerText = 'Пользователь не вошел в систему.';
-        }
-    }
-
-    async function loadPosts() {
-        const { data: posts, error } = await _supabase
-            .from('posts')
-            .select('*');
-
-        if (error) {
-            console.error('Ошибка загрузки постов:', error);
-            return;
-        }
-
-        const postsContainer = document.getElementById('postsContainer');
-        posts.forEach(post => {
-            const postElement = document.createElement('div');
-            postElement.className = 'post';
-            postElement.innerHTML = `
-            <a href="loadPost.html?id=${post.id}">
-                <h3>${post.title}</h3>
-                <img src="https://txocspjdfnxforkscyqx.supabase.co/storage/v1/object/public/post-images/public/${post.image}" alt="${post.title}" style="max-width: 100px;"/>
-            </a>
-        `;
-            postsContainer.appendChild(postElement);
-        });
-    }
-
-    async function checkUser () {
-        const { data: { user }, error } = await _supabase.auth.getUser();
-        localStorage.setItem('userId', user.id);
-    }
-
-    window.onload = function() {
-        localStorage.removeItem('postId');
-        localStorage.removeItem('contentBlocksCreatePost');
-        localStorage.removeItem('contentBlocksRzapisi');
-        localStorage.removeItem('contentBlocksRspiski');
-        loadPosts();
-        checkUser();
-        displayUserInfo();
-    };
-</script>
 </body>
 </html>
